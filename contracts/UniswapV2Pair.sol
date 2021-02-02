@@ -71,6 +71,58 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         _;
     }
 
+    function setGmuOracle(address newGmuOracle) public onlyOwner {
+        require(newGmuOracle != address(0), 'Pair: invalid oracle');
+
+        gmuOracle = ISimpleOracle(newGmuOracle);
+    }
+
+    function setUniswapOracle(address newUniswapOracle) public onlyOwner {
+        require(newUniswapOracle != address(0), 'Pair: invalid oracle');
+
+        uniswapOracle = IUniswapOracle(newUniswapOracle);
+    }
+
+    function setPenaltyToken(address newPenaltyToken) public onlyOwner {
+        require(newUniswapOracle != address(0), 'Pair: invalid token');
+
+        penaltyToken = ICustomERC20(newPenaltyToken);
+    }
+
+    function setRewardToken(address newRewardToken) public onlyOwner {
+        require(newRewardToken != address(0), 'Pair: invalid token');
+
+        rewardToken = ICustomERC20(newRewardToken);
+    }
+
+    function setPenaltyStructure(address newPenaltyToken, uint256 newPenaltyAmount) public onlyOwner {
+        require(newUniswapOracle != address(0), 'Pair: invalid token');
+        require(newPenaltyAmount > 0, 'Pair: invalid token');
+
+        penaltyToken = ICustomERC20(newPenaltyToken);
+        penaltyAmount = newPenaltyAmount;
+    }
+
+    function setRewardStructure(address newRewardToken, uint256 setRewardAmount) public onlyOwner {
+        require(newRewardToken != address(0), 'Pair: invalid token');
+        require(newRewardAmount > 0, 'Pair: invalid token');
+
+        rewardToken = ICustomERC20(newRewardToken);
+        rewardAmount = newRewardAmount;
+    }
+
+    function setPenaltyAmount(uint256 newPenaltyAmount) public onlyOwner {
+        require(newPenaltyAmount > 0, 'Pair: invalid token');
+
+        penaltyAmount = newPenaltyAmount;
+    }
+
+    function setRewardAmount(uint256 newRewardAmount) public onlyOwner {
+        require(newRewardAmount > 0, 'Pair: invalid token');
+
+        rewardAmount = newRewardAmount;
+    }
+
     function _getGMUPrice() private view returns (uint256) {
         return gmuOracle.getPrice();
     }
