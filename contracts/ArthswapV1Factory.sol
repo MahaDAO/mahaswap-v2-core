@@ -50,7 +50,7 @@ contract ArthswapV1Factory is IUniswapV2Factory, Ownable {
 
     function getPair(address token0, address token1) public returns (address) {
         if (_getPair[token0][token1] == address(0)) {
-            return defaultFactory.getPair(token0, token1);
+            return defaultFactory.getPair[token][token1];
         }
 
         return _getPair[token0][token1];

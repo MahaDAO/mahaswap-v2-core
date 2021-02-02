@@ -23,14 +23,6 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
      * State variables.
      */
 
-    uint256 public mahaRewardPerHour = 13 * 1e18;
-    uint256 public expectedVolumePerHour = 10000 * 1e18;
-
-    // Price of when penalty is to be charged.
-    uint256 penaltyPrice;
-    // Price of when reward is to be given.
-    uint256 rewardPrice;
-
     // Token which will be used to charge penalty or reward incentives.
     ICustomERC20 token;
     // Oracle which will be used for  to track the latest target price.
@@ -38,24 +30,56 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     // Used to track the latest twap price.
     IUniswapOracle uniswapOracle;
 
+    // Price of when reward is to be given.
+    uint256 rewardPrice;
+    // Price of when penalty is to be charged.
+    uint256 penaltyPrice;
+
+    // Should we use oracle to get diff. price feeds or not.
+    bool useOracle = false;
+
+    uint256 public mahaRewardPerHour = 13 * 1e18;
+    uint256 public expectedVolumePerHour = 10000 * 1e18;
+
     /**
      * Getters.
      */
+
+    function _getCashPrice() private view returns (uint256) {
+        // Verify that atleast token is ARTH token.
+        require(
+            IERC20(token0).name() == string('ARTH') || IERC20(token1).name() == string('ARTH'),
+            'Pair: invalid pair'
+        );
+
+        // Get the arth token.
+        address token = IERC20(token0).name() == 'ARTH' ? token0 : token1;
+
+        try uniswapOracle.consult(token, 1e18) returns (uint256 price) {
+            return price;
+        } catch {
+            revert('Controller: failed to consult cash price from the oracle');
+        }
+    }
 
     function _getGMUPrice() private view returns (uint256) {
         return gmuOracle.getPrice();
     }
 
     function getPenaltyPrice() view returns (uint256) {
-        // if (useOracle) then get penalty price from an oracle
-        // else get from a variable; this variable is settable from the
+        // If (useOracle) then get penalty price from an oracle
+        // else get from a variable. this variable is settable from the factory.
+        if (!useOracle) return penaltyPrice;
 
-        // allow useOracle & the oracle to be set by the factory class
-        return 1e16 * 95;
+        return _getCashPrice();
     }
 
     function getRewardIncentivePrice() view returns (uint256) {
-        return 1e16 * 120;
+        // If (useOracle) then get reward price from an oracle
+        // else get from a variable. this variable is settable from the factory.
+        if (!useOracle) return rewardPrice;
+
+        return _getCashPrice();
     }
 
     /**
@@ -69,13 +93,13 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     }
 
     function setPenaltyPrice(uint256 newPenaltyPrice) public onlyOwner {
-        require(newPenaltyPrice > 0, 'Pair: invalid token');
+        require(newPenaltyPrice > 0, 'Pair: invalid price');
 
         penaltyPrice = newPenaltyPrice;
     }
 
     function setRewardPrice(uint256 newRewardPrice) public onlyOwner {
-        require(newRewardPrice > 0, 'Pair: invalid token');
+        require(newRewardPrice > 0, 'Pair: invalid price');
 
         rewardPrice = newRewardPrice;
     }
@@ -92,29 +116,13 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         gmuOracle = ISimpleOracle(newGmuOracle);
     }
 
-    function _getCashPrice() private view returns (uint256) {
-        require(
-            IERC20(token0).name() == string('ARTH') || IERC20(token1).name() == string('ARTH'),
-            'Pair: invalid pair'
-        );
-
-        // Get the arth token.
-        address token = IERC20(token0).name() == 'ARTH' ? token0 : token1;
-
-        try uniswapOracle.consult(token, 1e18) returns (uint256 price) {
-            return price;
-        } catch {
-            revert('Treasury: failed to consult cash price from the oracle');
-        }
-    }
-
     /**
      * This is the function that burns the MAHA and returns how much ARTH should
      * actually be spent.
      *
      * Note we are always selling tokenA
      */
-    function conductCheck(
+    function conductChecks(
         address tokenA,
         address tokenB,
         uint256 reserveA,
@@ -122,44 +130,49 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         address from,
         uint256 amountIn
     ) public virtual returns (uint256 amountA, uint256 amountB) {
-        if (penatly) {
-            // 1. get k value (= reserveA/reserveB)
-            // 2. check if k < penaltyPrice
-            // 3. check if action is sell (change arguments if u have to)
-            // 4. burn maha if sell and based on the volume of the tx
+        // 1. Get the k for A.
+        uint256 priceA = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
 
-            bool isValid = _checkIfValidTrade();
-            if (!isValid) {
-                // If invalid then charge penalty to the sender.
+        // 2. Check if k < penaltyPrice.
+        uint256 priceToPayPenalty = getPenaltyPrice();
+        if (priceA < priceToPayPenalty) {
+            // If penalty is on then we burn penalty token.
 
-                if (address(penaltyToken) == address(token0)) {
-                    penaltyToken.burnFrom(msg.sender, amount0Out);
-                } else if (address(penaltyToken) == address(token1)) {
-                    penaltyToken.burnFrom(msg.sender, amount1Out);
-                } else {
-                    // If token to be used for penalty is different then that of
-                    // pair then we charge a specific amount of penalty.
+            // 3. TODO: Check if action is sell.
 
-                    uint256 maxBalance = penaltyToken.balanceOf(msg.sender);
+            // 4-a. TODO: Based on the volumne of the tx figure out the amount to burn.
+            uint256 amountToBurn = Math.min(amountIn, expectedVolumePerHour);
 
-                    // If balance is less than fee, then we charge the entire balance as penalty.
-                    if (maxBalance < penaltyAmount) {
-                        penaltyToken.burnFrom(msg.sender, maxBalance);
-                    } else {
-                        // Else, we charge the respective penalty amount.
-                        penaltyToken.burnFrom(msg.sender, penaltyAmount);
-                    }
-                }
+            // 4-b. Burn maha
+            // NOTE: amount has to be approved from frontend.
+            token.burnFrom(from, amountToBurn);
 
-                return;
-            }
-        } else {
-            // 1. get k value (= reserveA/reserveB)
-            // 2. check if k > rewardPrice
-            // 3. check if action is buy (change arguments if u have to)
-            // 4. send maha stored in contract based on an hourly rate
-            // 5. if we have 5000 MAHA for 30 days
-            // depending on the volume, send maha to this tx and make sure we are under 13maha per hour
+            // TODO: set approved amount to 0.
+
+            return;
+        }
+
+        // 1. get k value (= reserveA/reserveB)
+        // 2. check if k > rewardPrice
+        // 3. check if action is buy (change arguments if u have to)
+        // 4. send maha stored in contract based on an hourly rate
+        // 5. if we have 5000 MAHA for 30 days
+        // depending on the volume, send maha to this tx and make sure we are under 13maha per hour
+
+        // 2. Check if k > rewardPrice.
+        uint256 priceToGetReward = getRewardPrice();
+        if (priceA > priceToGetReward) {
+            // If reward is on then we transfer the rewards as per reward rate and tx volumne.
+
+            // 3. TODO: Check if the action is to buy.
+
+            // 4-a. TODO: Based on volumne, hourly rate and the max cap, figure out the amount to reward.
+            uint25 amountToReward = 1e18;
+
+            // 4-b. Send reward to the buyer.
+            token.transfer(from, amountToReward);
+
+            return;
         }
     }
 }

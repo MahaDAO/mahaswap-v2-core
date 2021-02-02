@@ -43,8 +43,6 @@ contract ArthswapV1Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
 
     // Used to pause swaping activity.
     bool swapingPaused = false;
-    // Should we use oracle to get diff. price feeds or not.
-    bool useOracle = false;
 
     uint256 private unlocked = 1;
 
