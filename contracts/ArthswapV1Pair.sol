@@ -15,47 +15,35 @@ import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV2Factory.sol';
 import './interfaces/IUniswapV2Callee.sol';
 
-contract ArthswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
+contract ArthswapV1Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
     /**
      * State variables.
      */
+
     uint256 public constant MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
-    address public factory;
     address public token0;
     address public token1;
+    address public factory;
 
-    uint112 private reserve0; // uses single storage slot, accessible via getReserves
-    uint112 private reserve1; // uses single storage slot, accessible via getReserves
-    uint32 private blockTimestampLast; // uses single storage slot, accessible via getReserves
+    uint112 private reserve0; // Uses single storage slot, accessible via getReserves.
+    uint112 private reserve1; // Uses single storage slot, accessible via getReserves.
+    uint32 private blockTimestampLast; // Uses single storage slot, accessible via getReserves.
 
+    uint256 public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event.
     uint256 public price0CumulativeLast;
     uint256 public price1CumulativeLast;
-    uint256 public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
-    // Token which will charge penalty or be given for rewards.
-    // TODO add a setter
+    // Controller which controls the incentives.
     IncentiveController controller;
-
-    // How much penalty to charge in case penalty token is diff. from
-    // token0 and token1.
-    uint256 penaltyPrice;
-
-    // How much reward to give in case reward token is diff. from
-    // token0 and token1.
-    uint256 rewardAmount;
-
-    // Token which will be used for  to track the latest target price.
-    ISimpleOracle gmuOracle;
-    // Used to track the latest twap price.
-    IUniswapOracle uniswapOracle;
 
     // Used to pause swaping activity.
     bool swapingPaused = false;
+    // Should we use oracle to get diff. price feeds or not.
     bool useOracle = false;
 
     uint256 private unlocked = 1;
@@ -102,102 +90,26 @@ contract ArthswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     }
 
     /**
-     * Getters.
-     */
-    function _getGMUPrice() private view returns (uint256) {
-        return gmuOracle.getPrice();
-    }
-
-    function getPenaltyPrice() view returns (uint256) {
-        // if (useOracle) then get penalty price from an oracle
-        // else get from a variable; this variable is settable from the
-
-        // allow useOracle & the oracle to be set by the factory class
-        return 1e16 * 95;
-    }
-
-    function getRewardIncentivePrice() view returns (uint256) {
-        return 1e16 * 120;
-    }
-
-    function _getCashPrice() private view returns (uint256) {
-        require(
-            IERC20(token0).name() == string('ARTH') || IERC20(token1).name() == string('ARTH'),
-            'Pair: invalid pair'
-        );
-
-        // Get the arth token.
-        address token = IERC20(token0).name() == 'ARTH' ? token0 : token1;
-
-        try uniswapOracle.consult(token, 1e18) returns (uint256 price) {
-            return price;
-        } catch {
-            revert('Treasury: failed to consult cash price from the oracle');
-        }
-    }
-
-    /**
-     * Setters.
+     * Setters
      */
 
-    function setGmuOracle(address newGmuOracle) public onlyOwner {
-        require(newGmuOracle != address(0), 'Pair: invalid oracle');
-
-        gmuOracle = ISimpleOracle(newGmuOracle);
+    function setSwapingPaused(bool isSet) public onlyOwner {
+        swapingPaused = isSet;
     }
 
-    function setUniswapOracle(address newUniswapOracle) public onlyOwner {
-        require(newUniswapOracle != address(0), 'Pair: invalid oracle');
-
-        uniswapOracle = IUniswapOracle(newUniswapOracle);
+    function setUseOracle(bool isSet) public onlyOwner {
+        useOracle = isSet;
     }
 
-    function setRewardToken(address newRewardToken) public onlyOwner {
-        require(newRewardToken != address(0), 'Pair: invalid token');
+    function setController(address newController) public onlyOwner {
+        require(newController != address(0), 'Pair: invalid address');
 
-        rewardToken = ICustomERC20(newRewardToken);
-    }
-
-    function setPenaltyStructure(address newPenaltyToken, uint256 newPenaltyAmount) public onlyOwner {
-        require(newUniswapOracle != address(0), 'Pair: invalid token');
-        require(newPenaltyAmount > 0, 'Pair: invalid token');
-
-        penaltyToken = ICustomERC20(newPenaltyToken);
-        penaltyAmount = newPenaltyAmount;
-    }
-
-    function setRewardStructure(address newRewardToken, uint256 setRewardAmount) public onlyOwner {
-        require(newRewardToken != address(0), 'Pair: invalid token');
-        require(newRewardAmount > 0, 'Pair: invalid token');
-
-        rewardToken = ICustomERC20(newRewardToken);
-        rewardAmount = newRewardAmount;
-    }
-
-    function setPenaltyAmount(uint256 newPenaltyAmount) public onlyOwner {
-        require(newPenaltyAmount > 0, 'Pair: invalid token');
-
-        penaltyAmount = newPenaltyAmount;
-    }
-
-    function setRewardAmount(uint256 newRewardAmount) public onlyOwner {
-        require(newRewardAmount > 0, 'Pair: invalid token');
-
-        rewardAmount = newRewardAmount;
+        controller = newController;
     }
 
     /**
      * Mutations.
      */
-
-    function _checkIfValidTrade() private view returns (bool) {
-        uint256 targetPrice = _getGMUPrice();
-        uint256 currentPrice = _getCashPrice();
-
-        if (targetPrice > currentPrice) return false;
-
-        return true;
-    }
 
     function getReserves()
         public
@@ -224,24 +136,11 @@ contract ArthswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     }
 
     // called once by the factory at time of deployment
-    function initialize(
-        address _token0,
-        address _token1,
-        address _penaltyToken,
-        address _rewardToken,
-        address _gmuOracle,
-        address _uniswapOracle
-    ) external {
+    function initialize(address _token0, address _token1) external {
         require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
 
         token0 = _token0;
         token1 = _token1;
-
-        penaltyToken = ICustomERC20(_penaltyToken);
-        rewardToken = ICustomERC20(_rewardToken);
-
-        gmuOracle = ISimpleOracle(_gmuOracle);
-        uniswapOracle = IUniswapOracle(_uniswapOracle);
     }
 
     // update reserves and, on the first call per block, price accumulators
@@ -295,6 +194,7 @@ contract ArthswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     // this low-level function should be called from a contract which performs important safety checks
     function mint(address to) external lock returns (uint256 liquidity) {
         (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
+
         uint256 balance0 = IERC20(token0).balanceOf(address(this));
         uint256 balance1 = IERC20(token1).balanceOf(address(this));
         uint256 amount0 = balance0.sub(_reserve0);
@@ -324,6 +224,7 @@ contract ArthswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     // this low-level function should be called from a contract which performs important safety checks
     function burn(address to) external lock returns (uint256 amount0, uint256 amount1) {
         (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
+
         address _token0 = token0; // gas savings
         address _token1 = token1; // gas savings
         uint256 balance0 = IERC20(_token0).balanceOf(address(this));
@@ -391,7 +292,7 @@ contract ArthswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         require(amount0In > 0 || amount1In > 0, 'UniswapV2: INSUFFICIENT_INPUT_AMOUNT');
 
         {
-            // scope for reserve{0,1}Adjusted, avoids stack too deep errors
+            // Scope for reserve{0,1}Adjusted, avoids stack too deep errors.
             uint256 balance0Adjusted = balance0.mul(1000).sub(amount0In.mul(3));
             uint256 balance1Adjusted = balance1.mul(1000).sub(amount1In.mul(3));
 
