@@ -4,11 +4,12 @@ pragma solidity =0.5.16;
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 
+import './UniswapV2Pair.sol';
+import './ArthswapV2Pair.sol';
 import './interfaces/ICustomERC20.sol';
 import '../interfaces/ISimpleOracle.sol';
 import '../interfaces/IUniswapOracle.sol';
 import './interfaces/IUniswapV2Factory.sol';
-import './UniswapV2Pair.sol';
 
 contract ArthswapV2Factory is IUniswapV2Factory, Ownable {
     /**
@@ -19,19 +20,19 @@ contract ArthswapV2Factory is IUniswapV2Factory, Ownable {
     // Who can set the feeTo.
     address public feeToSetter;
 
-    // Token which will charge penalty.
-    ICustomERC20 public penaltyToken;
     // Token which will be used for rewards.
     ICustomERC20 public rewardToken;
-
-    // Token addresses for custom pools.
-    address daiTokenAddress = address(0x6b175474e89094c44da98b954eedeac495271d0f);
-    address arthTokenAddress = address(0x0E3cC2c4FB9252d17d07C67135E48536071735D9);
+    // Token which will charge penalty.
+    ICustomERC20 public penaltyToken;
 
     // Token which will be used for  to track the latest target price.
     ISimpleOracle gmuOracle;
     // Used to track the latest twap price.
     IUniswapOracle uniswapOracle;
+
+    // Token addresses for custom pools.
+    address daiTokenAddress = address(0x6b175474e89094c44da98b954eedeac495271d0f);
+    address arthTokenAddress = address(0x0E3cC2c4FB9252d17d07C67135E48536071735D9);
 
     address[] public allPairs;
     mapping(address => mapping(address => address)) public getPair;
@@ -82,6 +83,18 @@ contract ArthswapV2Factory is IUniswapV2Factory, Ownable {
         gmuOracle = ISimpleOracle(newGmuOracle);
     }
 
+    function setDaiTokenAddress(address newDaiTokenAddress) public onlyOwner {
+        require(newDaiToken != address(0), 'Pair: invalid token');
+
+        daiTokenAddress = address(newDaiTokenAddress);
+    }
+
+    function setArthTokenAddress(address newArthTokenAddress) public onlyOwner {
+        require(newArthTokenAddress != address(0), 'Pair: invalid token');
+
+        arthTokenAddress = address(newArthTokenAddress);
+    }
+
     function setUniswapOracle(address newUniswapOracle) public onlyOwner {
         require(newUniswapOracle != address(0), 'Pair: invalid oracle');
 
@@ -107,6 +120,17 @@ contract ArthswapV2Factory is IUniswapV2Factory, Ownable {
         return allPairs.length;
     }
 
+    function _getPairMode(address token0, address token1) private view returns (uint256) {
+        if (
+            (token0 == arthTokenAddress && token1 == daiTokenAddress) ||
+            (token0 == daiTokenAddress && token1 == arthTokenAddress)
+        ) {
+            return uint256(1);
+        }
+
+        return uint256(0);
+    }
+
     /**
      * Mutations.
      */
@@ -119,22 +143,39 @@ contract ArthswapV2Factory is IUniswapV2Factory, Ownable {
         require(token0 != address(0), 'UniswapV2: ZERO_ADDRESS');
         require(getPair[token0][token1] == address(0), 'UniswapV2: PAIR_EXISTS'); // single check is sufficient
 
-        bytes memory bytecode = type(UniswapV2Pair).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(token0, token1));
+        // Check if the tokens form a pair of ARTH/DAI.
+        uint256 mode = _getPairMode(tokenA, tokenB);
+        if (mode == 0) {
+            // If they do not then use normal uniswap pair.
 
-        // TODO: recheck this byte code implementation.
-        assembly {
-            pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
+            bytes memory bytecode = type(UniswapV2Pair).creationCode;
+            bytes32 salt = keccak256(abi.encodePacked(token0, token1));
+
+            assembly {
+                pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
+            }
+
+            IUniswapV2Pair(pair).initialize(token0, token1);
+        } else if (mode == 1) {
+            // If they do then use arthswap pair.
+
+            bytes memory bytecode = type(ArthswapV2Pair).creationCode;
+            bytes32 salt = keccak256(abi.encodePacked(token0, token1));
+
+            // TODO: recheck this byte code implementation.
+            assembly {
+                pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
+            }
+
+            IUniswapV2Pair(pair).initialize(
+                token0,
+                token1,
+                address(penaltyToken),
+                address(rewardToken),
+                address(gmuOracle),
+                address(uniswapOracle)
+            );
         }
-
-        IUniswapV2Pair(pair).initialize(
-            token0,
-            token1,
-            address(penaltyToken),
-            address(rewardToken),
-            address(gmuOracle),
-            address(uniswapOracle)
-        );
 
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
