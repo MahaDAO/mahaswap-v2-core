@@ -269,15 +269,42 @@ contract ArthswapV1Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
             // scope for _token{0,1}, avoids stack too deep errors
             address _token0 = token0;
             address _token1 = token1;
+
             require(to != _token0 && to != _token1, 'UniswapV2: INVALID_TO');
 
             // Check if swap is valid or not.
-            require(
-                controller != address(0)
-                    ? IncentiveController(controller).conductCheck(_token0, _token1, a, b, c)
-                    : true,
-                'Incentive check failed'
-            );
+            // require(
+            //     controller != address(0)
+            //         ? IncentiveController(controller).conductCheck(_token0, _token1, a, b, c)
+            //         : true,
+            //     'Incentive check failed'
+            // );
+
+            if (address(controller) != address(0)) {
+                if (amount0Out == 0 && amount1Out > 0) {
+                    // This means we are selling token0.
+                    IncentiveController(controller).conductChecks(
+                        _token0,
+                        _token1,
+                        _reserve0,
+                        _reserve1,
+                        amount0Out,
+                        amount1Out
+                    );
+                } else if (amount1Out == 0 && amount0Out > 0) {
+                    // This means we are selling token1.
+                    IncentiveController(controller).conductChecks(
+                        _token1,
+                        _token0,
+                        _reserve1,
+                        _reserve0,
+                        amount1Out,
+                        amount0Out
+                    );
+                } else {
+                    // Do nothing.
+                }
+            }
 
             if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
             if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens

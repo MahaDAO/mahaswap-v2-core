@@ -113,17 +113,19 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
      * This is the function that burns the MAHA and returns how much ARTH should
      * actually be spent.
      *
-     * Note we are always selling tokenA
+     * // Note we are always selling tokenA
      */
+    // This function should not be public, only pair/factory should be able to access it.
     function conductChecks(
-        address tokenA,
+        address tokenA, // Token used for buying or selling.
         address tokenB,
         uint256 reserveA,
         uint256 reserveB,
         address from,
-        uint256 amountIn
+        uint256 amountA,
+        uint256 amountB
     ) public virtual returns (uint256 amountA, uint256 amountB) {
-        // 1. Get the k for A.
+        // 1. Get the k for A in terms of B.
         uint256 priceA = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
 
         // 2. Check if k < penaltyPrice.
@@ -131,14 +133,15 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         if (priceA < priceToPayPenalty) {
             // If penalty is on then we burn penalty token.
 
-            // 3. TODO: Check if action is sell.
+            // 3. Check if action is sell.
+            require(amountA == 0 && amountB > 0, 'Controller: This is not sell tx');
 
-            // 4-a. TODO: Based on the volumne of the tx figure out the amount to burn.
-            uint256 amountToBurn = amountIn;
+            // 4-a. Get amount of A we are selling as per the current price.
+            uint256 amountToBurn = priceA.mul(uint256(amountB))
 
-            // 4-b. Burn maha
+            // 4-b. Burn maha, based on the volumne of the tx figure out the amount to burn.
             // NOTE: amount has to be approved from frontend.
-            token.burnFrom(from, amountToBurn);
+            token.burnFrom(from, amountIn);
 
             // TODO: set approved amount to 0.
 
@@ -150,11 +153,14 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         if (priceA > priceToGetReward) {
             // If reward is on then we transfer the rewards as per reward rate and tx volumne.
 
-            // 3. TODO: Check if the action is to buy.
+            // 3. Check if the action is to buy.
+            require(amountA > 0 && amountB >= 0, 'Controller: This is not buy tx');
 
             // 4-a. Based on volumne of the tx & hourly rate, figure out the amount to reward.
             uint256 rate = token.balanceOf(address(this)).div(30).div(24); // Calculate the rate for curr. period.
-            uint25 amountToReward = rate.mul(amountIn);
+            
+            // Get amount of B we are buying
+            uint25 amountToReward = rate.mul(amountA);
 
             // 4-b. Cap the max reward.
             amountToReward = Math.min(amountToReward, mahaRewardPerHour);
