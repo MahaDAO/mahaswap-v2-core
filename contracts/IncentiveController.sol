@@ -137,7 +137,7 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
             require(amountA == 0 && amountB > 0, 'Controller: This is not sell tx');
 
             // 4-a. Get amount of A we are selling as per the current price.
-            uint256 amountToBurn = priceA.mul(uint256(amountB))
+            uint256 amountToBurn = priceA.mul(uint256(amountB));
 
             // 4-b. Burn maha, based on the volumne of the tx figure out the amount to burn.
             // NOTE: amount has to be approved from frontend.
@@ -158,7 +158,7 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
 
             // 4-a. Based on volumne of the tx & hourly rate, figure out the amount to reward.
             uint256 rate = token.balanceOf(address(this)).div(30).div(24); // Calculate the rate for curr. period.
-            
+
             // Get amount of A we are buying
             uint25 amountToReward = rate.mul(amountA);
 
