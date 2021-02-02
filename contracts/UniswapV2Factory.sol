@@ -45,6 +45,30 @@ contract UniswapV2Factory is IUniswapV2Factory, Ownable {
         uniswapOracle = IUniswapOracle(_uniswapOracle);
     }
 
+    function setGmuOracle(address newGmuOracle) public onlyOwner {
+        require(newGmuOracle != address(0), 'Pair: invalid oracle');
+
+        gmuOracle = ISimpleOracle(newGmuOracle);
+    }
+
+    function setUniswapOracle(address newUniswapOracle) public onlyOwner {
+        require(newUniswapOracle != address(0), 'Pair: invalid oracle');
+
+        uniswapOracle = IUniswapOracle(newUniswapOracle);
+    }
+
+    function setPenaltyToken(address newPenaltyToken) public onlyOwner {
+        require(newUniswapOracle != address(0), 'Pair: invalid token');
+
+        penaltyToken = ICustomERC20(newPenaltyToken);
+    }
+
+    function setRewardToken(address newRewardToken) public onlyOwner {
+        require(newRewardToken != address(0), 'Pair: invalid token');
+
+        rewardToken = ICustomERC20(newRewardToken);
+    }
+
     function allPairsLength() external view returns (uint256) {
         return allPairs.length;
     }
@@ -76,12 +100,14 @@ contract UniswapV2Factory is IUniswapV2Factory, Ownable {
     }
 
     function setFeeTo(address _feeTo) external {
-        require(msg.sender == feeToSetter, 'UniswapV2: FORBIDDEN');
+        require(msg.sender == feeToSetter || msg.sender == owner(), 'UniswapV2: FORBIDDEN');
+
         feeTo = _feeTo;
     }
 
     function setFeeToSetter(address _feeToSetter) external {
         require(msg.sender == feeToSetter, 'UniswapV2: FORBIDDEN');
+
         feeToSetter = _feeToSetter;
     }
 }
