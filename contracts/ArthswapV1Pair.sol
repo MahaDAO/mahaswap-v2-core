@@ -281,29 +281,14 @@ contract ArthswapV1Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
             // );
 
             if (address(controller) != address(0)) {
-                if (amount0Out == 0 && amount1Out > 0) {
-                    // This means we are selling token0.
-                    IncentiveController(controller).conductChecks(
-                        _token0,
-                        _token1,
-                        _reserve0,
-                        _reserve1,
-                        amount0Out,
-                        amount1Out
-                    );
-                } else if (amount1Out == 0 && amount0Out > 0) {
-                    // This means we are selling token1.
-                    IncentiveController(controller).conductChecks(
-                        _token1,
-                        _token0,
-                        _reserve1,
-                        _reserve0,
-                        amount1Out,
-                        amount0Out
-                    );
-                } else {
-                    // Do nothing.
-                }
+                IncentiveController(controller).conductChecks(
+                    _token0,
+                    _token1,
+                    _reserve0,
+                    _reserve1,
+                    amount0Out,
+                    amount1Out
+                );
             }
 
             if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
