@@ -76,7 +76,10 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     }
 
     function _getCashPrice() private view returns (uint256) {
-        require(IERC20(token0).name() == 'ARTH' || IERC20(token1).name() == 'ARTH', 'Pair: invalid pair');
+        require(
+            IERC20(token0).name() == string('ARTH') || IERC20(token1).name() == string('ARTH'),
+            'Pair: invalid pair'
+        );
 
         // Get the arth token.
         address token = IERC20(token0).name() == 'ARTH' ? token0 : token1;
