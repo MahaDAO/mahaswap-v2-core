@@ -66,13 +66,13 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         return _getCashPrice(tokenA);
     }
 
-    function getRewardIncentivePrice(address tokenB) view returns (uint256) {
+    function getRewardIncentivePrice(address tokenA) view returns (uint256) {
         // If (useOracle) then get reward price from an oracle
         // else get from a variable.
         // This variable is settable from the factory.
         if (!useOracle) return rewardPrice;
 
-        return _getCashPrice(tokenB);
+        return _getCashPrice(tokenA);
     }
 
     /**
@@ -149,7 +149,7 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         }
 
         // 2. Check if k > rewardPrice.
-        uint256 priceToGetReward = getRewardPrice(tokenB); // NOTE: we use tokenB since tokenA is always sell.
+        uint256 priceToGetReward = getRewardPrice(tokenA);
         if (priceA > priceToGetReward) {
             // If reward is on then we transfer the rewards as per reward rate and tx volumne.
 
@@ -159,7 +159,7 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
             // 4-a. Based on volumne of the tx & hourly rate, figure out the amount to reward.
             uint256 rate = token.balanceOf(address(this)).div(30).div(24); // Calculate the rate for curr. period.
             
-            // Get amount of B we are buying
+            // Get amount of A we are buying
             uint25 amountToReward = rate.mul(amountA);
 
             // 4-b. Cap the max reward.
