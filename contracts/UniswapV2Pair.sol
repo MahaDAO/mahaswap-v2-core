@@ -2,7 +2,12 @@
 
 pragma solidity =0.5.16;
 
+import '@openzeppelin/contracts/access/Ownable.sol';
+
+import './interfaces/ICustomERC20.sol';
 import './interfaces/IUniswapV2Pair.sol';
+import '../interfaces/ISimpleOracle.sol';
+import '../interfaces/IUniswapOracle.sol';
 import './UniswapV2ERC20.sol';
 import './libraries/Math.sol';
 import './libraries/UQ112x112.sol';
@@ -10,7 +15,7 @@ import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV2Factory.sol';
 import './interfaces/IUniswapV2Callee.sol';
 
-contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
+contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
@@ -29,12 +34,63 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     uint256 public price1CumulativeLast;
     uint256 public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
+    // Token which will charge penalty.
+    ICustomERC20 public penaltyToken;
+    // Token which will be used for rewards.
+    ICustomERC20 public rewardToken;
+
+    // How much penalty to charge in case penalty token is diff. from
+    // token0 and token1.
+    uint256 penaltyAmount;
+
+    // How much reward to give in case reward token is diff. from
+    // token0 and token1.
+    uint256 rewardAmount;
+
+    // Token which will be used for  to track the latest target price.
+    ISimpleOracle gmuOracle;
+    // Used to track the latest twap price.
+    IUniswapOracle uniswapOracle;
+
+    // Used to pause swaping activity.
+    bool swapingPaused = false;
+
     uint256 private unlocked = 1;
+
     modifier lock() {
         require(unlocked == 1, 'UniswapV2: LOCKED');
+
         unlocked = 0;
         _;
         unlocked = 1;
+    }
+
+    modifier checkIfPaused {
+        require(!swapingPaused, 'Pair: swapping is paused');
+
+        _;
+    }
+
+    function _getGMUPrice() private view returns (uint256) {
+        return gmuOracle.getPrice();
+    }
+
+    function _getCashPrice() private view returns (uint256) {
+        // TODO: replace this token0 with actual contract address of arth.
+        try uniswapOracle.consult(token0, 1e18) returns (uint256 price) {
+            return price;
+        } catch {
+            revert('Treasury: failed to consult cash price from the oracle');
+        }
+    }
+
+    function _checkIfValidTrade() private view returns (bool) {
+        uint256 targetPrice = _getGMUPrice();
+        uint256 currentPrice = _getCashPrice();
+
+        if (targetPrice > currentPrice) return false;
+
+        return true;
     }
 
     function getReserves()
@@ -180,18 +236,47 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         uint256 amount1Out,
         address to,
         bytes calldata data
-    ) external lock {
+    ) external checkIfPaused lock {
         require(amount0Out > 0 || amount1Out > 0, 'UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT');
         (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
         require(amount0Out < _reserve0 && amount1Out < _reserve1, 'UniswapV2: INSUFFICIENT_LIQUIDITY');
 
         uint256 balance0;
         uint256 balance1;
+
         {
             // scope for _token{0,1}, avoids stack too deep errors
             address _token0 = token0;
             address _token1 = token1;
             require(to != _token0 && to != _token1, 'UniswapV2: INVALID_TO');
+
+            // Check if swap is valid or not.
+            bool isValid = _checkIfValidTrade();
+            if (!isValid) {
+                // If invalid then charge penalty to the sender.
+
+                if (address(penaltyToken) == address(token0)) {
+                    penaltyToken.burnFrom(msg.sender, amount0Out);
+                } else if (address(penaltyToken) == address(token1)) {
+                    penaltyToken.burnFrom(msg.sender, amount1Out);
+                } else {
+                    // If token to be used for penalty is different then that of
+                    // pair then we charge a specific amount of penalty.
+
+                    uint256 maxBalance = penaltyToken.balanceOf(msg.sender);
+
+                    // If balance is less than fee, then we charge the entire balance as penalty.
+                    if (maxBalance < penaltyAmount) {
+                        penaltyToken.burnFrom(msg.sender, maxBalance);
+                    } else {
+                        // Else, we charge the respective penalty amount.
+                        penaltyToken.burnFrom(msg.sender, penaltyAmount);
+                    }
+                }
+
+                return;
+            }
+
             if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
             if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
             if (data.length > 0) IUniswapV2Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);
