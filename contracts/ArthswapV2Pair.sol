@@ -37,14 +37,13 @@ contract ArthswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     uint256 public price1CumulativeLast;
     uint256 public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
-    // Token which will charge penalty.
-    ICustomERC20 public penaltyToken;
-    // Token which will be used for rewards.
-    ICustomERC20 public rewardToken;
+    // Token which will charge penalty or be given for rewards.
+    // TODO add a setter
+    IncentiveController controller;
 
     // How much penalty to charge in case penalty token is diff. from
     // token0 and token1.
-    uint256 penaltyAmount;
+    uint256 penaltyPrice;
 
     // How much reward to give in case reward token is diff. from
     // token0 and token1.
@@ -57,6 +56,7 @@ contract ArthswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
 
     // Used to pause swaping activity.
     bool swapingPaused = false;
+    bool useOracle = false;
 
     uint256 private unlocked = 1;
 
@@ -108,6 +108,18 @@ contract ArthswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         return gmuOracle.getPrice();
     }
 
+    function getPenaltyPrice() view returns (uint256) {
+        // if (useOracle) then get penalty price from an oracle
+        // else get from a variable; this variable is settable from the
+
+        // allow useOracle & the oracle to be set by the factory class
+        return 1e16 * 95;
+    }
+
+    function getRewardIncentivePrice() view returns (uint256) {
+        return 1e16 * 120;
+    }
+
     function _getCashPrice() private view returns (uint256) {
         require(
             IERC20(token0).name() == string('ARTH') || IERC20(token1).name() == string('ARTH'),
@@ -138,12 +150,6 @@ contract ArthswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         require(newUniswapOracle != address(0), 'Pair: invalid oracle');
 
         uniswapOracle = IUniswapOracle(newUniswapOracle);
-    }
-
-    function setPenaltyToken(address newPenaltyToken) public onlyOwner {
-        require(newUniswapOracle != address(0), 'Pair: invalid token');
-
-        penaltyToken = ICustomERC20(newPenaltyToken);
     }
 
     function setRewardToken(address newRewardToken) public onlyOwner {
@@ -367,31 +373,10 @@ contract ArthswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
             require(to != _token0 && to != _token1, 'UniswapV2: INVALID_TO');
 
             // Check if swap is valid or not.
-            bool isValid = _checkIfValidTrade();
-            if (!isValid) {
-                // If invalid then charge penalty to the sender.
-
-                if (address(penaltyToken) == address(token0)) {
-                    penaltyToken.burnFrom(msg.sender, amount0Out);
-                } else if (address(penaltyToken) == address(token1)) {
-                    penaltyToken.burnFrom(msg.sender, amount1Out);
-                } else {
-                    // If token to be used for penalty is different then that of
-                    // pair then we charge a specific amount of penalty.
-
-                    uint256 maxBalance = penaltyToken.balanceOf(msg.sender);
-
-                    // If balance is less than fee, then we charge the entire balance as penalty.
-                    if (maxBalance < penaltyAmount) {
-                        penaltyToken.burnFrom(msg.sender, maxBalance);
-                    } else {
-                        // Else, we charge the respective penalty amount.
-                        penaltyToken.burnFrom(msg.sender, penaltyAmount);
-                    }
-                }
-
-                return;
-            }
+            require(
+                addr != address(0) ? IncentiveController(addr).conductCheck(_token0, _token1, a, b, c) : true,
+                'Incentive check failed'
+            );
 
             if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
             if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
