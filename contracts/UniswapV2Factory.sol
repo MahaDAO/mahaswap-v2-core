@@ -2,10 +2,12 @@
 
 pragma solidity =0.5.16;
 
+import '@openzeppelin/contracts/access/Ownable.sol';
+
 import './interfaces/IUniswapV2Factory.sol';
 import './UniswapV2Pair.sol';
 
-contract UniswapV2Factory is IUniswapV2Factory {
+contract UniswapV2Factory is IUniswapV2Factory, Ownable {
     address public feeTo;
     address public feeToSetter;
 
