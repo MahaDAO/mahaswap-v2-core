@@ -8,26 +8,40 @@ import './libraries/SafeMath.sol';
 contract UniswapV2ERC20 is IUniswapV2ERC20 {
     using SafeMath for uint256;
 
-    string public constant name = 'Uniswap V2';
-    string public constant symbol = 'UNI-V2';
-    uint8 public constant decimals = 18;
+    /**
+     * State variables.
+     */
+
     uint256 public totalSupply;
+    uint8 public constant decimals = 18;
+    string public constant symbol = 'UNI-V2';
+    string public constant name = 'Uniswap V2';
+
+    mapping(address => uint256) public nonces;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
 
     bytes32 public DOMAIN_SEPARATOR;
-    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
-    mapping(address => uint256) public nonces;
+    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+
+    /**
+     * Events.
+     */
 
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
 
+    /**
+     * Constructor.
+     */
     constructor() public {
         uint256 chainId;
+
         assembly {
             chainId := chainid
         }
+
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
@@ -39,15 +53,21 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
         );
     }
 
+    /**
+     * Mutations.
+     */
+
     function _mint(address to, uint256 value) internal {
         totalSupply = totalSupply.add(value);
         balanceOf[to] = balanceOf[to].add(value);
+
         emit Transfer(address(0), to, value);
     }
 
     function _burn(address from, uint256 value) internal {
         balanceOf[from] = balanceOf[from].sub(value);
         totalSupply = totalSupply.sub(value);
+
         emit Transfer(from, address(0), value);
     }
 
@@ -57,6 +77,7 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
         uint256 value
     ) private {
         allowance[owner][spender] = value;
+
         emit Approval(owner, spender, value);
     }
 
@@ -67,11 +88,13 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
     ) private {
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
+
         emit Transfer(from, to, value);
     }
 
     function approve(address spender, uint256 value) external returns (bool) {
         _approve(msg.sender, spender, value);
+
         return true;
     }
 
@@ -85,10 +108,11 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
         address to,
         uint256 value
     ) external returns (bool) {
-        if (allowance[from][msg.sender] != uint256(-1)) {
+        if (allowance[from][msg.sender] != uint256(-1))
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
-        }
+
         _transfer(from, to, value);
+
         return true;
     }
 
@@ -102,6 +126,7 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
         bytes32 s
     ) external {
         require(deadline >= block.timestamp, 'UniswapV2: EXPIRED');
+
         bytes32 digest =
             keccak256(
                 abi.encodePacked(
@@ -110,8 +135,11 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
                     keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner]++, deadline))
                 )
             );
+
         address recoveredAddress = ecrecover(digest, v, r, s);
+
         require(recoveredAddress != address(0) && recoveredAddress == owner, 'UniswapV2: INVALID_SIGNATURE');
+
         _approve(owner, spender, value);
     }
 }

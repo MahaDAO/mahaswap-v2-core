@@ -11,7 +11,12 @@ import './interfaces/IUniswapV2Factory.sol';
 import './UniswapV2Pair.sol';
 
 contract UniswapV2Factory is IUniswapV2Factory, Ownable {
+    /**
+     * State variables.
+     */
+
     address public feeTo;
+    // Who can set the feeTo.
     address public feeToSetter;
 
     // Token which will charge penalty.
@@ -24,11 +29,17 @@ contract UniswapV2Factory is IUniswapV2Factory, Ownable {
     // Used to track the latest twap price.
     IUniswapOracle uniswapOracle;
 
-    mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
+    mapping(address => mapping(address => address)) public getPair;
 
+    /**
+     * Event.
+     */
     event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
 
+    /**
+     * Constructor.
+     */
     constructor(
         address _feeToSetter,
         address _penaltyToken,
@@ -38,11 +49,27 @@ contract UniswapV2Factory is IUniswapV2Factory, Ownable {
     ) public {
         feeToSetter = _feeToSetter;
 
-        penaltyToken = ICustomERC20(_penaltyToken);
         rewardToken = ICustomERC20(_rewardToken);
+        penaltyToken = ICustomERC20(_penaltyToken);
 
         gmuOracle = ISimpleOracle(_gmuOracle);
         uniswapOracle = IUniswapOracle(_uniswapOracle);
+    }
+
+    /**
+     * Setters.
+     */
+
+    function setFeeTo(address _feeTo) external {
+        require(msg.sender == feeToSetter || msg.sender == owner(), 'UniswapV2: FORBIDDEN');
+
+        feeTo = _feeTo;
+    }
+
+    function setFeeToSetter(address _feeToSetter) external {
+        require(msg.sender == feeToSetter || msg.sender == owner(), 'UniswapV2: FORBIDDEN');
+
+        feeToSetter = _feeToSetter;
     }
 
     function setGmuOracle(address newGmuOracle) public onlyOwner {
@@ -69,15 +96,25 @@ contract UniswapV2Factory is IUniswapV2Factory, Ownable {
         rewardToken = ICustomERC20(newRewardToken);
     }
 
+    /**
+     * Getter.
+     */
     function allPairsLength() external view returns (uint256) {
         return allPairs.length;
     }
 
+    /**
+     * Mutations.
+     */
+
     function createPair(address tokenA, address tokenB) external returns (address pair) {
         require(tokenA != tokenB, 'UniswapV2: IDENTICAL_ADDRESSES');
+
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+
         require(token0 != address(0), 'UniswapV2: ZERO_ADDRESS');
         require(getPair[token0][token1] == address(0), 'UniswapV2: PAIR_EXISTS'); // single check is sufficient
+
         bytes memory bytecode = type(UniswapV2Pair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
 
@@ -98,18 +135,7 @@ contract UniswapV2Factory is IUniswapV2Factory, Ownable {
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);
+
         emit PairCreated(token0, token1, pair, allPairs.length);
-    }
-
-    function setFeeTo(address _feeTo) external {
-        require(msg.sender == feeToSetter || msg.sender == owner(), 'UniswapV2: FORBIDDEN');
-
-        feeTo = _feeTo;
-    }
-
-    function setFeeToSetter(address _feeToSetter) external {
-        require(msg.sender == feeToSetter, 'UniswapV2: FORBIDDEN');
-
-        feeToSetter = _feeToSetter;
     }
 }
