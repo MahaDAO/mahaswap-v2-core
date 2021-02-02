@@ -76,8 +76,12 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     }
 
     function _getCashPrice() private view returns (uint256) {
-        // TODO: replace this token0 with actual contract address of arth.
-        try uniswapOracle.consult(token0, 1e18) returns (uint256 price) {
+        require(IERC20(token0).name() == 'ARTH' || IERC20(token1).name() == 'ARTH', 'Pair: invalid pair');
+
+        // Get the arth token.
+        address token = IERC20(token0).name() == 'ARTH' ? token0 : token1;
+
+        try uniswapOracle.consult(token, 1e18) returns (uint256 price) {
             return price;
         } catch {
             revert('Treasury: failed to consult cash price from the oracle');
@@ -133,10 +137,24 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     }
 
     // called once by the factory at time of deployment
-    function initialize(address _token0, address _token1) external {
+    function initialize(
+        address _token0,
+        address _token1,
+        address _penaltyToken,
+        address _rewardToken,
+        address _gmuOracle,
+        address _uniswapOracle
+    ) external {
         require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
+
         token0 = _token0;
         token1 = _token1;
+
+        penaltyToken = ICustomERC20(_penaltyToken);
+        rewardToken = ICustomERC20(_rewardToken);
+
+        gmuOracle = ISimpleOracle(_gmuOracle);
+        uniswapOracle = IUniswapOracle(_uniswapOracle);
     }
 
     // update reserves and, on the first call per block, price accumulators
