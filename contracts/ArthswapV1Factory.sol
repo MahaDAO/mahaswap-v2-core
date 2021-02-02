@@ -43,6 +43,7 @@ contract ArthswapV1Factory is IUniswapV2Factory, Ownable {
     /**
      * Getters.
      */
+
     function allPairsLength() external view returns (uint256) {
         return allPairs.length;
     }
@@ -92,9 +93,36 @@ contract ArthswapV1Factory is IUniswapV2Factory, Ownable {
     function setIncentiveControllerForPair(
         address token0,
         address token1,
-        address addr
+        address controller
     ) onlyOwner {
-        address pair = _getPair[token1][token0];
-        IUniswapV2Pair(pair).setIncentiveController(addr);
+        address pair = _getPair[token0][token1];
+
+        require(address(pair) != address(0), 'ArthswapV1: invalid pair');
+
+        IUniswapV2Pair(pair).setIncentiveController(controller);
+    }
+
+    function setSwapingPausedForPair(
+        address token0,
+        address token1,
+        bool isSet
+    ) onlyOwner {
+        address pair = _getPair[token0][token1];
+
+        require(address(pair) != address(0), 'ArthswapV1: invalid pair');
+
+        IUniswapV2Pair(pair).setSwapingPaused(isSet);
+    }
+
+    function setUseOracleForPair(
+        address token0,
+        address token1,
+        bool isSet
+    ) onlyOwner {
+        address pair = _getPair[token0][token1];
+
+        require(address(pair) != address(0), 'ArthswapV1: invalid pair');
+
+        IUniswapV2Pair(pair).setUseOracle(isSet);
     }
 }

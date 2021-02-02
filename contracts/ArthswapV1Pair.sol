@@ -101,7 +101,7 @@ contract ArthswapV1Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         useOracle = isSet;
     }
 
-    function setController(address newController) public onlyOwner {
+    function setIncentiveController(address newController) public onlyOwner {
         require(newController != address(0), 'Pair: invalid address');
 
         controller = newController;
