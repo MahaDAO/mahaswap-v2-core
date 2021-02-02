@@ -273,13 +273,16 @@ contract ArthswapV1Pair is IUniswapV2Pair, UniswapV2ERC20, Ownable {
 
             // Check if swap is valid or not.
             require(
-                addr != address(0) ? IncentiveController(addr).conductCheck(_token0, _token1, a, b, c) : true,
+                controller != address(0)
+                    ? IncentiveController(controller).conductCheck(_token0, _token1, a, b, c)
+                    : true,
                 'Incentive check failed'
             );
 
             if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
             if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
             if (data.length > 0) IUniswapV2Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);
+
             balance0 = IERC20(_token0).balanceOf(address(this));
             balance1 = IERC20(_token1).balanceOf(address(this));
         }

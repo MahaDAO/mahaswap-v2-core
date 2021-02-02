@@ -31,9 +31,9 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
     IUniswapOracle uniswapOracle;
 
     // Price of when reward is to be given.
-    uint256 rewardPrice;
+    uint256 rewardPrice = uint256(120).mul(1e16); // ~1.2$
     // Price of when penalty is to be charged.
-    uint256 penaltyPrice;
+    uint256 penaltyPrice = uint256(95).mul(1e16); // ~0.95$
 
     // Should we use oracle to get diff. price feeds or not.
     bool useOracle = false;
@@ -45,16 +45,7 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
      * Getters.
      */
 
-    function _getCashPrice() private view returns (uint256) {
-        // Verify that atleast token is ARTH token.
-        require(
-            IERC20(token0).name() == string('ARTH') || IERC20(token1).name() == string('ARTH'),
-            'Pair: invalid pair'
-        );
-
-        // Get the arth token.
-        address token = IERC20(token0).name() == 'ARTH' ? token0 : token1;
-
+    function _getCashPrice(token) private view returns (uint256) {
         try uniswapOracle.consult(token, 1e18) returns (uint256 price) {
             return price;
         } catch {
@@ -66,20 +57,22 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         return gmuOracle.getPrice();
     }
 
-    function getPenaltyPrice() view returns (uint256) {
+    function getPenaltyPrice(address tokenA) view returns (uint256) {
         // If (useOracle) then get penalty price from an oracle
-        // else get from a variable. this variable is settable from the factory.
+        // else get from a variable.
+        // This variable is settable from the factory.
         if (!useOracle) return penaltyPrice;
 
-        return _getCashPrice();
+        return _getCashPrice(tokenA);
     }
 
-    function getRewardIncentivePrice() view returns (uint256) {
+    function getRewardIncentivePrice(address tokenB) view returns (uint256) {
         // If (useOracle) then get reward price from an oracle
-        // else get from a variable. this variable is settable from the factory.
+        // else get from a variable.
+        // This variable is settable from the factory.
         if (!useOracle) return rewardPrice;
 
-        return _getCashPrice();
+        return _getCashPrice(tokenB);
     }
 
     /**
@@ -134,14 +127,14 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
         uint256 priceA = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
 
         // 2. Check if k < penaltyPrice.
-        uint256 priceToPayPenalty = getPenaltyPrice();
+        uint256 priceToPayPenalty = getPenaltyPrice(tokenA); // NOTE: we use tokenA since tokenA is always sell.
         if (priceA < priceToPayPenalty) {
             // If penalty is on then we burn penalty token.
 
             // 3. TODO: Check if action is sell.
 
             // 4-a. TODO: Based on the volumne of the tx figure out the amount to burn.
-            uint256 amountToBurn = Math.min(amountIn, expectedVolumePerHour);
+            uint256 amountToBurn = amountIn;
 
             // 4-b. Burn maha
             // NOTE: amount has to be approved from frontend.
@@ -152,24 +145,21 @@ contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
             return;
         }
 
-        // 1. get k value (= reserveA/reserveB)
-        // 2. check if k > rewardPrice
-        // 3. check if action is buy (change arguments if u have to)
-        // 4. send maha stored in contract based on an hourly rate
-        // 5. if we have 5000 MAHA for 30 days
-        // depending on the volume, send maha to this tx and make sure we are under 13maha per hour
-
         // 2. Check if k > rewardPrice.
-        uint256 priceToGetReward = getRewardPrice();
+        uint256 priceToGetReward = getRewardPrice(tokenB); // NOTE: we use tokenB since tokenA is always sell.
         if (priceA > priceToGetReward) {
             // If reward is on then we transfer the rewards as per reward rate and tx volumne.
 
             // 3. TODO: Check if the action is to buy.
 
-            // 4-a. TODO: Based on volumne, hourly rate and the max cap, figure out the amount to reward.
-            uint25 amountToReward = 1e18;
+            // 4-a. Based on volumne of the tx & hourly rate, figure out the amount to reward.
+            uint256 rate = token.balanceOf(address(this)).div(30).div(24); // Calculate the rate for curr. period.
+            uint25 amountToReward = rate.mul(amountIn);
 
-            // 4-b. Send reward to the buyer.
+            // 4-b. Cap the max reward.
+            amountToReward = Math.min(amountToReward, mahaRewardPerHour);
+
+            // 4-c. Send reward to the buyer.
             token.transfer(from, amountToReward);
 
             return;
