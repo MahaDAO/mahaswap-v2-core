@@ -66,11 +66,8 @@ contract ArthswapV1Factory is IUniswapV2Factory, Ownable {
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
 
         require(token0 != address(0), 'ArthswapV1: ZERO_ADDRESS');
-        // A single check is sufficient/.
+        // A single check is sufficient.
         require(_getPair[token0][token1] == address(0), 'ArthswapV1: PAIR_EXISTS');
-
-        // Check if the tokens form a pair of ARTH/DAI.
-        uint256 mode = _getPairMode(tokenA, tokenB);
 
         // NOTE: shouln't this be created on for ArthswapV1Pair?
         bytes memory bytecode = type(UniswapV2Pair).creationCode;
