@@ -145,8 +145,8 @@ contract IncentiveController {
         uint256 reserveA,
         uint256 reserveB,
         address from,
-        uint256 amountA,
-        uint256 amountB
+        uint256 amountOutA,
+        uint256 amountOutB
     ) public virtual onlyPair(tokenA, tokenB) {
         // 1. Get the k for A in terms of B.
         uint256 priceA = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
@@ -157,12 +157,12 @@ contract IncentiveController {
             // If penalty is on then we burn penalty token.
 
             // 3. Check if action is sell.
-            if (amountA > 0) return;
+            if (amountOutA > 0) return;
 
             // require(amountA == 0 && amountB > 0, 'Controller: This is not sell tx');
 
             // 4-a. Get amount of A we are selling as per the current price.
-            uint256 amountToBurn = priceA.mul(uint256(amountB));
+            uint256 amountToBurn = priceA.mul(uint256(amountOutB));
 
             // 4-b. Burn maha, based on the volumne of the tx figure out the amount to burn.
             // NOTE: amount has to be approved from frontend.
@@ -179,7 +179,7 @@ contract IncentiveController {
             // If reward is on then we transfer the rewards as per reward rate and tx volumne.
 
             // 3. Check if the action is to buy.
-            if (amountA == 0) return;
+            if (amountOutA == 0) return;
 
             // require(amountA > 0 && amountB >= 0, 'Controller: This is not buy tx');
 
@@ -187,7 +187,7 @@ contract IncentiveController {
             uint256 rate = token.balanceOf(address(this)).div(30).div(24); // Calculate the rate for curr. period.
 
             // Get amount of A we are buying
-            uint25 amountToReward = rate.mul(amountA);
+            uint25 amountToReward = rate.mul(amountOutB);
 
             // 4-b. Cap the max reward.
             amountToReward = Math.min(amountToReward, mahaRewardPerHour);
