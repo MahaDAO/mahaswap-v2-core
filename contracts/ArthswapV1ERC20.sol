@@ -2,7 +2,8 @@
 
 pragma solidity ^0.7.4;
 
-import './libraries/SafeMath.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
+
 import './interfaces/IArthswapV1ERC20.sol';
 
 contract ArthswapV1ERC20 is IArthswapV1ERC20 {
@@ -12,31 +13,26 @@ contract ArthswapV1ERC20 is IArthswapV1ERC20 {
      * State variables.
      */
 
-    uint256 public totalSupply;
-    uint8 public constant decimals = 18;
-    string public constant symbol = 'ARTHSWAP-V1';
-    string public constant name = 'Arthswap V1';
+    uint256 public override totalSupply;
+    uint8 public constant override decimals = 18;
+    string public constant override name = 'Arthswap V1';
+    string public constant override symbol = 'ARTHSWAP-V1';
 
-    mapping(address => uint256) public nonces;
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
+    mapping(address => uint256) public override nonces;
+    mapping(address => uint256) public override balanceOf;
+    mapping(address => mapping(address => uint256)) public override allowance;
 
-    bytes32 public DOMAIN_SEPARATOR;
+    bytes32 public override DOMAIN_SEPARATOR;
     // NOTE: Might need to change this hash.
-    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    bytes32 public constant override PERMIT_TYPEHASH =
+        0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-
-    /**
-     * Events.
-     */
-
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-    event Transfer(address indexed from, address indexed to, uint256 value);
 
     /**
      * Constructor.
      */
-    constructor() public {
+    constructor() {
         uint256 chainId;
 
         assembly {
@@ -93,13 +89,13 @@ contract ArthswapV1ERC20 is IArthswapV1ERC20 {
         emit Transfer(from, to, value);
     }
 
-    function approve(address spender, uint256 value) external returns (bool) {
+    function approve(address spender, uint256 value) external override returns (bool) {
         _approve(msg.sender, spender, value);
 
         return true;
     }
 
-    function transfer(address to, uint256 value) external returns (bool) {
+    function transfer(address to, uint256 value) external override returns (bool) {
         _transfer(msg.sender, to, value);
         return true;
     }
@@ -108,7 +104,7 @@ contract ArthswapV1ERC20 is IArthswapV1ERC20 {
         address from,
         address to,
         uint256 value
-    ) external returns (bool) {
+    ) external override returns (bool) {
         if (allowance[from][msg.sender] != uint256(-1))
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
 
@@ -125,7 +121,7 @@ contract ArthswapV1ERC20 is IArthswapV1ERC20 {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external {
+    ) external override {
         require(deadline >= block.timestamp, 'UniswapV2: EXPIRED');
 
         bytes32 digest =
