@@ -2,6 +2,7 @@
 
 pragma solidity ^0.7.4;
 
+import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 import './ArthswapV1ERC20.sol';
@@ -48,7 +49,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
      */
 
     modifier lock() {
-        require(unlocked == 1, 'UniswapV2: LOCKED');
+        require(unlocked == 1, 'ArthswapV1: LOCKED');
 
         unlocked = 0;
         _;
@@ -127,12 +128,12 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     ) private {
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
 
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'UniswapV2: TRANSFER_FAILED');
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'ArthswapV1: TRANSFER_FAILED');
     }
 
     // called once by the factory at time of deployment
     function initialize(address _token0, address _token1) external {
-        require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
+        require(msg.sender == factory, 'ArthswapV1: FORBIDDEN'); // sufficient check
 
         token0 = _token0;
         token1 = _token1;
@@ -145,7 +146,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         uint112 _reserve0,
         uint112 _reserve1
     ) private {
-        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), 'UniswapV2: OVERFLOW');
+        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), 'ArthswapV1: OVERFLOW');
 
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
@@ -205,7 +206,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
             liquidity = Math.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);
         }
 
-        require(liquidity > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED');
+        require(liquidity > 0, 'ArthswapV1: INSUFFICIENT_LIQUIDITY_MINTED');
 
         _mint(to, liquidity);
 
@@ -231,7 +232,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution
         amount1 = liquidity.mul(balance1) / _totalSupply; // using balances ensures pro-rata distribution
 
-        require(amount0 > 0 && amount1 > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED');
+        require(amount0 > 0 && amount1 > 0, 'ArthswapV1: INSUFFICIENT_LIQUIDITY_BURNED');
 
         _burn(address(this), liquidity);
         _safeTransfer(_token0, to, amount0);
@@ -253,11 +254,11 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         address to,
         bytes calldata data
     ) external checkIfPaused lock {
-        require(amount0Out > 0 || amount1Out > 0, 'UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amount0Out > 0 || amount1Out > 0, 'ArthswapV1: INSUFFICIENT_OUTPUT_AMOUNT');
 
         (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
 
-        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'UniswapV2: INSUFFICIENT_LIQUIDITY');
+        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'ArthswapV1: INSUFFICIENT_LIQUIDITY');
 
         uint256 balance0;
         uint256 balance1;
@@ -267,7 +268,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
             address _token0 = token0;
             address _token1 = token1;
 
-            require(to != _token0 && to != _token1, 'UniswapV2: INVALID_TO');
+            require(to != _token0 && to != _token1, 'ArthswapV1: INVALID_TO');
 
             // Check if swap is valid or not.
             // require(
@@ -299,7 +300,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         uint256 amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
         uint256 amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
 
-        require(amount0In > 0 || amount1In > 0, 'UniswapV2: INSUFFICIENT_INPUT_AMOUNT');
+        require(amount0In > 0 || amount1In > 0, 'ArthswapV1: INSUFFICIENT_INPUT_AMOUNT');
 
         {
             // Scope for reserve{0,1}Adjusted, avoids stack too deep errors.
@@ -308,7 +309,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
 
             require(
                 balance0Adjusted.mul(balance1Adjusted) >= uint256(_reserve0).mul(_reserve1).mul(1000**2),
-                'UniswapV2: K'
+                'ArthswapV1: K'
             );
         }
 
