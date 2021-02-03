@@ -20,10 +20,6 @@ contract IncentiveController {
     // Factory that will be using this contract.
     IArthswapV1Factory factory;
 
-    // Addresses for pair.
-    address token0 = address();
-    address token1 = address();
-
     // Token which will be used to charge penalty or reward incentives.
     ICustomERC20 token;
     // Oracle which will be used for  to track the latest target price.
@@ -52,8 +48,8 @@ contract IncentiveController {
         _;
     }
 
-    modifier onlyPair {
-        require(msg.sender == factory.getPair(token0, token1), 'Controller: forbidden');
+    modifier onlyPair(address tokenA, address tokenB) {
+        require(msg.sender == factory.getPair(tokenA, tokenB), 'Controller: forbidden');
 
         _;
     }
@@ -121,7 +117,7 @@ contract IncentiveController {
         rewardPrice = newRewardPrice;
     }
 
-    function setUniswapOracle(address newUniswapOracle) public onlyOwner {
+    function setUniswapOracle(address newUniswapOracle) public onlyFactory {
         require(newUniswapOracle != address(0), 'Pair: invalid oracle');
 
         uniswapOracle = IUniswapOracle(newUniswapOracle);
@@ -148,7 +144,7 @@ contract IncentiveController {
         address from,
         uint256 amountA,
         uint256 amountB
-    ) public virtual onlyPair {
+    ) public virtual onlyPair(tokenA, tokenB) {
         // 1. Get the k for A in terms of B.
         uint256 priceA = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
 
