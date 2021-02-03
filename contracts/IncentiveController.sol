@@ -139,6 +139,10 @@ contract IncentiveController is Ownable {
      */
 
     function _checkAndPenalize(uint256 price, uint256 amountOutA, uint256 amountOutB, bool isTokenAProtocolToken) private {
+        // The token which is the main protocol token and we are selling, then the other token should have
+        // out amount > 0.
+        require(isTokenAProtocolToken ? amountOutB > 0 : amountOutA >  0, 'Controller: invalid operation');
+        
         // Get the penalty price
         uint256 penaltyPrice = getPenaltyPrice();
 
@@ -153,9 +157,16 @@ contract IncentiveController is Ownable {
                 // If not then set amount to burn as per tx volume of which token is the protocol token.
                 amountToBurn = isTokenAProtocolToken ? amountOutA : amountOutB;
             } else {
-                // If any is 0, then we figure out which one is 0.
-                
-                // TODO: calculate the amount to burn as per volumne, isTokenAProtocolToken and which amount is 0.
+                // If any is 0, then we figure out the amount as per price.
+
+                // If A is protocolToken, then amountOutB can not be 0 and vice versa.
+                // However if amountOutProtocol is 0, 
+                // then we calculate the amount being sold as per price and amount of other token swapped.
+                // Lets say A = 2$ and B = 1$, then A/B = 2/1 = 2.
+                // Hence A = 2B.
+                // Hence if we are selling A and outAmount is 0,
+                // then we can calculate it with 2 * outAmountB.
+                amountToBurn = penaltyPrice.sub(price).mul(isTokenAProtocolToken ? amountOutB : amountOutA).div(100);
             }
 
             if (amountToBurn > 0) {
@@ -169,6 +180,9 @@ contract IncentiveController is Ownable {
     }
 
     function _checkAndIncentivize(address to, uint256 price, uint256 amountOutA, uint256 amountOutB, bool isTokenAProtocolToken) private {
+        // The token which is the main protocol token and we are buying hence that token should have out amount > 0.
+        require(isTokenAProtocolToken ? amountOutA > 0 : amountOutB > 0, 'Controller: invalid operation');
+
         // Check if we are above the reward price.
         // NOTE: can this be changed to price > getPenaltyPrice()?
         if (price > getRewardPrice()) {
@@ -185,8 +199,12 @@ contract IncentiveController is Ownable {
                 amountToReward = isTokenAProtocolToken ? amountOutA : amountOutB;
             } else {
                 // If any is 0, then we figure out which one is 0.
-                
-                // TODO: calculate the amount to burn as per volumne, isTokenAProtocolToken and which amount is 0.
+
+                // If A is protocolToken, then amountOutA can not be 0 and vice versa.
+                // However if the other token out amount is 0, 
+                // then we calculate the amount being sold as per price and amount of the protocolToken.
+                // Refer Line 165 to 168.
+                amountToBurn = rate.mul(price.mul(isTokenAProtocolToken ? amountOutA : amountOutA));
             }
             
             // Calculate the amount as per volumne and rate. 
