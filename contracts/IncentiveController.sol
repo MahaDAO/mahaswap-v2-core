@@ -138,55 +138,68 @@ contract IncentiveController is Ownable {
      * Mutations.
      */
 
-    function _checkAndPenalize(uint256 price, uint256 amountOutA, uint256 amountOutB) private {
-        // 2. Check if k < penaltyPrice.
+    function _checkAndPenalize(uint256 price, uint256 amountOutA, uint256 amountOutB, bool isTokenAProtocolToken) private {
+        // Get the penalty price
         uint256 penaltyPrice = getPenaltyPrice();
 
-        if (priceA < penaltyPrice) {
-            // If penalty is on then we burn penalty token.
+        // Check if we are below the penaltyPrice.
+        if (price < penaltyPrice) {
+            // If penalty is on then we penalize
 
-            // 3. Check if action is sell.
-            if (amountOutA > 0) return;
+            uint256 amountToBurn = 0;
 
-            // TODOS:
-            // require(amountA == 0 && amountB > 0, 'Controller: This is not sell tx');
+            // Check if any amountOut is 0 or not.
+            if (amountOutA > 0 && amountOutB > 0) {
+                // If not then set amount to burn as per tx volume of which token is the protocol token.
+                amountToBurn = isTokenAProtocolToken ? amountOutA : amountOutB;
+            } else {
+                // If any is 0, then we figure out which one is 0.
+                
+                // TODO: calculate the amount to burn as per volumne, isTokenAProtocolToken and which amount is 0.
+            }
 
-            // 4-a. Get amount of A we are selling as per the current price.
-            uint256 amountToBurn = penaltyPrice.sub(priceA).mul(uint256(amountOutB)).div(100);
-
-            // 4-b. Burn maha, based on the volumne of the tx figure out the amount to burn.
-            // NOTE: amount has to be approved from frontend.
-            token.burnFrom(from, amountToBurn);
+            if (amountToBurn > 0) {
+                // NOTE: amount has to be approved from frontend.
+                // Burn and charge penalty.
+                token.burnFrom(from, amountToBurn);
+            }
 
             // TODO: set approved amount to 0.
-
-            return;
         }
     }
 
-    function _checkAndIncentivize(uint256 price, uint256 amountOutA, uint256 amountOutB) private {
-        // 2. Check if k < rewardPrice.
-        if (priceA < getRewardPrice(tokenA)) {
-            // If reward is on then we transfer the rewards as per reward rate and tx volumne.
+    function _checkAndIncentivize(address to, uint256 price, uint256 amountOutA, uint256 amountOutB, bool isTokenAProtocolToken) private {
+        // Check if we are above the reward price.
+        // NOTE: can this be changed to price > getPenaltyPrice()?
+        if (price > getRewardPrice()) {
+            // If reward is on then we reward.
 
-            // 3. Check if the action is to buy.
-            if (amountOutA == 0) return;
-
-            // require(amountA > 0 && amountB >= 0, 'Controller: This is not buy tx');
-
-            // 4-a. Based on volumne of the tx & hourly rate, figure out the amount to reward.
+            // Based on volumne of the tx & hourly rate, figure out the amount to reward.
             uint256 rate = token.balanceOf(address(this)).div(30).div(24); // Calculate the rate for curr. period.
+            
+            uint256 amountToReward = 0;
 
-            // Get amount of A we are buying
-            uint25 amountToReward = rate.mul(amountOutB);
+            // Check if any amount is 0 or not.
+            if (amountOutA > 0 && amountOutB > 0) {
+                // If not, then set the amount as per the rate and volume of the protocol token.
+                amountToReward = isTokenAProtocolToken ? amountOutA : amountOutB;
+            } else {
+                // If any is 0, then we figure out which one is 0.
+                
+                // TODO: calculate the amount to burn as per volumne, isTokenAProtocolToken and which amount is 0.
+            }
+            
+            // Calculate the amount as per volumne and rate. 
+            // Cap the amount to a maximum rewardPerHour if amount > maxRewardPerHour.
+            amountToReward = Math.min(
+                rate.mul(amountToReward),
+                mahaRewardPerHour
+            )
 
-            // 4-b. Cap the max reward.
-            amountToReward = Math.min(amountToReward, mahaRewardPerHour);
-
-            // 4-c. Send reward to the buyer.
-            token.transfer(from, amountToReward);
-
-            return;
+            if (amountToReward > 0) {
+                // Send reward to the appropriate address.
+                token.transfer(to, amountToReward);
+            }
         }
     }
 
@@ -210,8 +223,10 @@ contract IncentiveController is Ownable {
     ) public virtual onlyOwner {
         require(tokenA == penaltyTokenAddress || tokenB == penaltyTokenAddress, 'Controller: invalid config');
 
+        bool isTokenAProtocolToken = tokenA == penaltyTokenAddress;
+
         // Get the price for the token.
-        uint256 price = tokenA == penaltyTokenAddress 
+        uint256 price = isTokenAProtocolToken 
             ? uint256(UQ112x112.encode(reserveA).uqdiv(reserveB)) 
             : uint256(UQ112x112.encode(reserveB).uqdiv(reserveA));
 
@@ -223,14 +238,14 @@ contract IncentiveController is Ownable {
 
             // Check if we are buying or selling.
             if (
-                (tokenA == penaltyTokenAddress && newReserveA > reserveA) ||
-                (tokenB == penaltyTokenAddress && newReserveB > reserveB) 
+                (isTokenAProtocolToken && newReserveA > reserveA) ||
+                (!isTokenAProtocolToken && newReserveB > reserveB) 
             ) {
                 // If we are buying the main protocol token, then we incentivize the tx sender.
-                 _checkAndIncentivize(price, amountOutA, amountOutB);
+                 _checkAndIncentivize(to, price, amountOutA, amountOutB, isTokenAProtocolToken);
             } else {
                 // Else we penalize the tx sender.
-                _checkAndPenalize(price, amountOutA, amountOutB);
+                _checkAndPenalize(price, amountOutA, amountOutB, isTokenAProtocolToken);
             }
         }
     }
