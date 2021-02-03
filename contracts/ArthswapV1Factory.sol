@@ -6,9 +6,6 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 
 import './UniswapV2Pair.sol';
 import './ArthswapV1Pair.sol';
-import './interfaces/ICustomERC20.sol';
-import './interfaces/ISimpleOracle.sol';
-import './interfaces/IUniswapOracle.sol';
 import './interfaces/IUniswapV2Factory.sol';
 import './interfaces/IArthswapV1Factory.sol';
 

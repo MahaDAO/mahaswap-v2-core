@@ -5,7 +5,7 @@ pragma solidity ^0.7.4;
 import './libraries/SafeMath.sol';
 import './interfaces/IArthswapV1ERC20.sol';
 
-contract UniswapV2ERC20 is IArthswapV1ERC20 {
+contract ArthswapV1ERC20 is IArthswapV1ERC20 {
     using SafeMath for uint256;
 
     /**

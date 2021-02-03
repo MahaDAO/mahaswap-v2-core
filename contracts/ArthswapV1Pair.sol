@@ -4,20 +4,15 @@ pragma solidity ^0.7.4;
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 
-import './interfaces/ICustomERC20.sol';
-import './interfaces/IUniswapV2Pair.sol';
-import './interfaces/ISimpleOracle.sol';
-import './interfaces/IUniswapOracle.sol';
-import './UniswapV2ERC20.sol';
+import './ArthswapV1ERC20.sol';
 import './libraries/Math.sol';
-import './libraries/UQ112x112.sol';
 import './interfaces/IERC20.sol';
-import './interfaces/IUniswapV2Factory.sol';
+import './libraries/UQ112x112.sol';
 import './interfaces/IUniswapV2Callee.sol';
 import './interfaces/IArthswapV1Pair.sol';
-import './ArthswapV1ERC20.sol';
+import './interfaces/IArthswapV1Factory.sol';
 
-contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20.sol, Ownable {
+contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
@@ -170,7 +165,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20.sol, Ownable {
 
     // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
     function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
-        address feeTo = IUniswapV2Factory(factory).feeTo();
+        address feeTo = IArthswapV1Factory(factory).feeTo();
         feeOn = feeTo != address(0);
         uint256 _kLast = kLast; // gas savings
 
