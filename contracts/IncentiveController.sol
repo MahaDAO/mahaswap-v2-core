@@ -22,8 +22,10 @@ contract IncentiveController {
 
     // Token which will be used to charge penalty or reward incentives.
     ICustomERC20 token;
-    // Oracle which will be used for  to track the latest target price.
-    ISimpleOracle gmuOracle;
+
+    // // Oracle which will be used for  to track the latest target price.
+    // ISimpleOracle gmuOracle;
+
     // Used to track the latest twap price.
     IUniswapOracle uniswapOracle;
 
@@ -73,9 +75,9 @@ contract IncentiveController {
         }
     }
 
-    function _getGMUPrice() private view returns (uint256) {
-        return gmuOracle.getPrice();
-    }
+    // function _getGMUPrice() private view returns (uint256) {
+    //     return gmuOracle.getPrice();
+    // }
 
     function getPenaltyPrice(address tokenA) view returns (uint256) {
         // If (useOracle) then get penalty price from an oracle
@@ -123,11 +125,11 @@ contract IncentiveController {
         uniswapOracle = IUniswapOracle(newUniswapOracle);
     }
 
-    function setGmuOracle(address newGmuOracle) public onlyFactory {
-        require(newGmuOracle != address(0), 'Pair: invalid oracle');
+    // function setGmuOracle(address newGmuOracle) public onlyFactory {
+    //     require(newGmuOracle != address(0), 'Pair: invalid oracle');
 
-        gmuOracle = ISimpleOracle(newGmuOracle);
-    }
+    //     gmuOracle = ISimpleOracle(newGmuOracle);
+    // }
 
     /**
      * This is the function that burns the MAHA and returns how much ARTH should
