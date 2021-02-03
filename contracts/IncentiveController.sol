@@ -138,6 +138,7 @@ contract IncentiveController {
      * Note we are always selling tokenA
      */
     // This function should not be public, only pair/factory should be able to access it.
+    // Token check on ui require(tokenA = IERC20(address))
     function conductChecks(
         address tokenA,
         address tokenB,
