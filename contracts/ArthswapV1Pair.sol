@@ -274,17 +274,6 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
             //     'Incentive check failed'
             // );
 
-            if (address(controller) != address(0)) {
-                IncentiveController(controller).conductChecks(
-                    _token0,
-                    _token1,
-                    _reserve0,
-                    _reserve1,
-                    amount0Out,
-                    amount1Out
-                );
-            }
-
             if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
             if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
             if (data.length > 0) IArthswapV1Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);
@@ -306,6 +295,19 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
             require(
                 balance0Adjusted.mul(balance1Adjusted) >= uint256(_reserve0).mul(_reserve1).mul(1000**2),
                 'ArthswapV1: K'
+            );
+        }
+
+        if (address(controller) != address(0)) {
+            IncentiveController(controller).conductChecks(
+                _token0,
+                _token1,
+                _reserve0,
+                _reserve1,
+                msg.sender,
+                to,
+                amount0Out,
+                amount1Out
             );
         }
 
