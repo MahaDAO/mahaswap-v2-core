@@ -93,10 +93,6 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         swapingPaused = isSet;
     }
 
-    function setUseOracle(bool isSet) public onlyOwner {
-        useOracle = isSet;
-    }
-
     function setIncentiveController(address newController) public onlyOwner {
         require(newController != address(0), 'Pair: invalid address');
 
