@@ -43,7 +43,7 @@ contract IncentiveController is Ownable {
 
     // Max. reward per hour to be given out.
     uint256 public mahaRewardPerHour = 13 * 1e18;
-    
+
     uint256 public expectedVolumePerHour = 10000 * 1e18;
 
     /**
@@ -123,11 +123,15 @@ contract IncentiveController is Ownable {
         uniswapOracle = IUniswapOracle(newUniswapOracle);
     }
 
+    function setUseOracle(bool isSet) public onlyFactory {
+        useOracle = isSet;
+    }
+
     /**
      * This is the function that burns the MAHA and returns how much ARTH should
      * actually be spent.
      *
-     * Note we are always selling tokenA
+     * Note we are always selling tokenA.
      */
     function conductChecks(
         address tokenA,
@@ -138,7 +142,7 @@ contract IncentiveController is Ownable {
         address to,
         uint256 amountOutA,
         uint256 amountOutB
-    ) public virtual onlyPair(tokenA, tokenB) {
+    ) public virtual onlyOwner {
         // 1. Get the k for A in terms of B.
         uint256 priceA = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
 
