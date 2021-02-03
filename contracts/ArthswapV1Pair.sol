@@ -8,8 +8,8 @@ import './ArthswapV1ERC20.sol';
 import './libraries/Math.sol';
 import './interfaces/IERC20.sol';
 import './libraries/UQ112x112.sol';
-import './interfaces/IUniswapV2Callee.sol';
 import './interfaces/IArthswapV1Pair.sol';
+import './interfaces/IArthswapV1Callee.sol';
 import './interfaces/IArthswapV1Factory.sol';
 
 contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
@@ -290,7 +290,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
 
             if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
             if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
-            if (data.length > 0) IUniswapV2Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);
+            if (data.length > 0) IArthswapV1Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);
 
             balance0 = IERC20(_token0).balanceOf(address(this));
             balance1 = IERC20(_token1).balanceOf(address(this));
