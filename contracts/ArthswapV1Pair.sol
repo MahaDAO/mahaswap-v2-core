@@ -15,8 +15,9 @@ import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV2Factory.sol';
 import './interfaces/IUniswapV2Callee.sol';
 import './interfaces/IArthswapV1Pair.sol';
+import './ArthswapV1ERC20.sol';
 
-contract ArthswapV1Pair is IArthswapV1Pair, UniswapV2ERC20, Ownable {
+contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20.sol, Ownable {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
