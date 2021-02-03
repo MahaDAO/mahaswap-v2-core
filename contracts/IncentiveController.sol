@@ -30,6 +30,9 @@ contract IncentiveController is Ownable {
     // Token which is the main token of a protocol.
     address protocolTokenAddress;
 
+    // Used to track targetPrice.
+    ISimpleOracle gmuOracle;
+    
     // Used to track the latest twap price.
     IUniswapOracle uniswapOracle;
 
@@ -68,6 +71,10 @@ contract IncentiveController is Ownable {
     /**
      * Getters.
      */
+
+    function _getTargetPrice() private view returns (uint256) {
+        return gmuOracle.getPrice();
+    }
 
     function _getCashPrice() private view returns (uint256) {
         try uniswapOracle.consult(protocolTokenAddress, 1e18) returns (uint256 price) {
@@ -128,28 +135,14 @@ contract IncentiveController is Ownable {
     }
 
     /**
-     * This is the function that burns the MAHA and returns how much ARTH should
-     * actually be spent.
-     *
-     * Note we are always selling tokenA.
+     * Mutations.
      */
-    function conductChecks(
-        address tokenA,
-        address tokenB,
-        uint256 reserveA,
-        uint256 reserveB,
-        uint256 newReserveA,
-        uint256 newReserveB,
-        address from,
-        address to,
-        uint256 amountOutA,
-        uint256 amountOutB
-    ) public virtual onlyOwner {
-        // 1. Get the k for A in terms of B.
-        uint256 priceA = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
 
+    function _checkAndPenalize(uint256 price, uint256 amountOutA, uint256 amountOutB) private {
         // 2. Check if k < penaltyPrice.
-        if (priceA < getPenaltyPrice(tokenA)) {
+        uint256 penaltyPrice = getPenaltyPrice();
+
+        if (priceA < penaltyPrice) {
             // If penalty is on then we burn penalty token.
 
             // 3. Check if action is sell.
@@ -169,7 +162,9 @@ contract IncentiveController is Ownable {
 
             return;
         }
+    }
 
+    function _checkAndIncentivize(uint256 price, uint256 amountOutA, uint256 amountOutB) private {
         // 2. Check if k < rewardPrice.
         if (priceA < getRewardPrice(tokenA)) {
             // If reward is on then we transfer the rewards as per reward rate and tx volumne.
@@ -192,6 +187,51 @@ contract IncentiveController is Ownable {
             token.transfer(from, amountToReward);
 
             return;
+        }
+    }
+
+    /**
+     * This is the function that burns the MAHA and returns how much ARTH should
+     * actually be spent.
+     *
+     * Note we are always selling tokenA.
+     */
+    function conductChecks(
+        address tokenA,
+        address tokenB,
+        uint256 reserveA,
+        uint256 reserveB,
+        uint256 newReserveA,
+        uint256 newReserveB,
+        address from,
+        address to,
+        uint256 amountOutA,
+        uint256 amountOutB
+    ) public virtual onlyOwner {
+        require(tokenA == penaltyTokenAddress || tokenB == penaltyTokenAddress, 'Controller: invalid config');
+
+        // Get the price for the token.
+        uint256 price = tokenA == penaltyTokenAddress 
+            ? uint256(UQ112x112.encode(reserveA).uqdiv(reserveB)) 
+            : uint256(UQ112x112.encode(reserveB).uqdiv(reserveA));
+
+        // Check if we are below the targetPrice.
+        if (price < _getTargetPrice()) {
+            // If we are below the target price, then we penalize or incentivize the tx sender.
+
+            bool isBuying = false;
+
+            // Check if we are buying or selling.
+            if (
+                (tokenA == penaltyTokenAddress && newReserveA > reserveA) ||
+                (tokenB == penaltyTokenAddress && newReserveB > reserveB) 
+            ) {
+                // If we are buying the main protocol token, then we incentivize the tx sender.
+                 _checkAndIncentivize(price, amountOutA, amountOutB);
+            } else {
+                // Else we penalize the tx sender.
+                _checkAndPenalize(price, amountOutA, amountOutB);
+            }
         }
     }
 }
