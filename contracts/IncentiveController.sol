@@ -135,11 +135,11 @@ contract IncentiveController {
      * This is the function that burns the MAHA and returns how much ARTH should
      * actually be spent.
      *
-     * // Note we are always selling tokenA
+     * Note we are always selling tokenA
      */
     // This function should not be public, only pair/factory should be able to access it.
     function conductChecks(
-        address tokenA, // Token used for buying or selling.
+        address tokenA,
         address tokenB,
         uint256 reserveA,
         uint256 reserveB,
