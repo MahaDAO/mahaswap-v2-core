@@ -127,15 +127,15 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'ArthswapV1: TRANSFER_FAILED');
     }
 
-    // called once by the factory at time of deployment
+    // Called once by the factory at time of deployment.
     function initialize(address _token0, address _token1) external {
-        require(msg.sender == factory, 'ArthswapV1: FORBIDDEN'); // sufficient check
+        require(msg.sender == factory, 'ArthswapV1: FORBIDDEN'); // Sufficient check.
 
         token0 = _token0;
         token1 = _token1;
     }
 
-    // update reserves and, on the first call per block, price accumulators
+    // Update reserves and, on the first call per block, price accumulators.
     function _update(
         uint256 balance0,
         uint256 balance1,
@@ -145,10 +145,10 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         require(balance0 <= uint112(-1) && balance1 <= uint112(-1), 'ArthswapV1: OVERFLOW');
 
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
-        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // Overflow is desired.
 
         if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
-            // * never overflows, and + overflow is desired
+            // * Never overflows, and + overflow is desired.
             price0CumulativeLast += uint256(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * timeElapsed;
             price1CumulativeLast += uint256(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;
         }
@@ -160,11 +160,11 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         emit Sync(reserve0, reserve1);
     }
 
-    // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
+    // If fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k).
     function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
         address feeTo = IArthswapV1Factory(factory).feeTo();
         feeOn = feeTo != address(0);
-        uint256 _kLast = kLast; // gas savings
+        uint256 _kLast = kLast; // Gas savings.
 
         if (feeOn) {
             if (_kLast != 0) {
@@ -183,7 +183,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         }
     }
 
-    // this low-level function should be called from a contract which performs important safety checks
+    // This low-level function should be called from a contract which performs important safety checks.
     function mint(address to) external lock returns (uint256 liquidity) {
         (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
 
@@ -193,11 +193,11 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         uint256 amount1 = balance1.sub(_reserve1);
 
         bool feeOn = _mintFee(_reserve0, _reserve1);
-        uint256 _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
+        uint256 _totalSupply = totalSupply; // Gas savings, must be defined here since totalSupply can update in _mintFee.
 
         if (_totalSupply == 0) {
             liquidity = Math.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
-            _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
+            _mint(address(0), MINIMUM_LIQUIDITY); // Permanently lock the first MINIMUM_LIQUIDITY tokens.
         } else {
             liquidity = Math.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);
         }
@@ -208,25 +208,25 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
 
         _update(balance0, balance1, _reserve0, _reserve1);
 
-        if (feeOn) kLast = uint256(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
+        if (feeOn) kLast = uint256(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date.
 
         emit Mint(msg.sender, amount0, amount1);
     }
 
-    // this low-level function should be called from a contract which performs important safety checks
+    // This low-level function should be called from a contract which performs important safety checks.
     function burn(address to) external lock returns (uint256 amount0, uint256 amount1) {
         (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
 
-        address _token0 = token0; // gas savings
-        address _token1 = token1; // gas savings
+        address _token0 = token0; // Gas savings.
+        address _token1 = token1; // Gas savings.
         uint256 balance0 = IERC20(_token0).balanceOf(address(this));
         uint256 balance1 = IERC20(_token1).balanceOf(address(this));
         uint256 liquidity = balanceOf[address(this)];
 
         bool feeOn = _mintFee(_reserve0, _reserve1);
-        uint256 _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
-        amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution
-        amount1 = liquidity.mul(balance1) / _totalSupply; // using balances ensures pro-rata distribution
+        uint256 _totalSupply = totalSupply; // Gas savings, must be defined here since totalSupply can update in _mintFee.
+        amount0 = liquidity.mul(balance0) / _totalSupply; // Using balances ensures pro-rata distribution.
+        amount1 = liquidity.mul(balance1) / _totalSupply; // Using balances ensures pro-rata distribution.
 
         require(amount0 > 0 && amount1 > 0, 'ArthswapV1: INSUFFICIENT_LIQUIDITY_BURNED');
 
@@ -243,7 +243,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         emit Burn(msg.sender, amount0, amount1, to);
     }
 
-    // this low-level function should be called from a contract which performs important safety checks
+    // This low-level function should be called from a contract which performs important safety checks.
     function swap(
         uint256 amount0Out,
         uint256 amount1Out,
@@ -252,7 +252,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     ) external checkIfPaused lock {
         require(amount0Out > 0 || amount1Out > 0, 'ArthswapV1: INSUFFICIENT_OUTPUT_AMOUNT');
 
-        (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
+        (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // Gas savings.
 
         require(amount0Out < _reserve0 && amount1Out < _reserve1, 'ArthswapV1: INSUFFICIENT_LIQUIDITY');
 
@@ -260,22 +260,14 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         uint256 balance1;
 
         {
-            // scope for _token{0,1}, avoids stack too deep errors
+            // Scope for _token{0,1}, avoids stack too deep errors.
             address _token0 = token0;
             address _token1 = token1;
 
             require(to != _token0 && to != _token1, 'ArthswapV1: INVALID_TO');
 
-            // Check if swap is valid or not.
-            // require(
-            //     controller != address(0)
-            //         ? IncentiveController(controller).conductCheck(_token0, _token1, a, b, c)
-            //         : true,
-            //     'Incentive check failed'
-            // );
-
-            if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
-            if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
+            if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // Optimistically transfer tokens.
+            if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // Optimistically transfer tokens.
             if (data.length > 0) IArthswapV1Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);
 
             balance0 = IERC20(_token0).balanceOf(address(this));
@@ -298,34 +290,37 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
             );
         }
 
-        if (address(controller) != address(0)) {
-            IncentiveController(controller).conductChecks(
-                _token0,
-                _token1,
-                _reserve0,
-                _reserve1,
-                msg.sender,
-                to,
-                amount0Out,
-                amount1Out
-            );
-        }
-
         _update(balance0, balance1, _reserve0, _reserve1);
+
+        (uint112 _newReserve0, uint112 _newReserve1, ) = getReserves(); // Gas savings.
+
+        // TODO: check if buying or selling.
+        // if (address(controller) != address(0)) {
+        //     IncentiveController(controller).conductChecks(
+        //         _token0,
+        //         _token1,
+        //         _reserve0,
+        //         _reserve1,
+        //         msg.sender,
+        //         to,
+        //         amount0Out,
+        //         amount1Out
+        //     );
+        // }
 
         emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
     }
 
-    // force balances to match reserves
+    // Force balances to match reserves.
     function skim(address to) external lock {
-        address _token0 = token0; // gas savings
-        address _token1 = token1; // gas savings
+        address _token0 = token0; // Gas savings.
+        address _token1 = token1; // Gas savings.
 
         _safeTransfer(_token0, to, IERC20(_token0).balanceOf(address(this)).sub(reserve0));
         _safeTransfer(_token1, to, IERC20(_token1).balanceOf(address(this)).sub(reserve1));
     }
 
-    // force reserves to match balances
+    // Force reserves to match balances.
     function sync() external lock {
         _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
     }
