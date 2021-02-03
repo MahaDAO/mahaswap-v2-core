@@ -2,21 +2,27 @@
 
 pragma solidity ^0.7.4;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-
 import './libraries/Math.sol';
 import './libraries/UQ112x112.sol';
 import './interfaces/ICustomERC20.sol';
 import './interfaces/ISimpleOracle.sol';
 import './interfaces/IUniswapOracle.sol';
+import './interfaces/IArthswapV1Factory.sol';
 
-contract IncentiveController is Ownable {
+contract IncentiveController {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
     /**
      * State variables.
      */
+
+    // Factory that will be using this contract.
+    IArthswapV1Factory factory;
+
+    // Addresses for pair.
+    address token0 = address();
+    address token1 = address();
 
     // Token which will be used to charge penalty or reward incentives.
     ICustomERC20 token;
@@ -35,6 +41,29 @@ contract IncentiveController is Ownable {
 
     uint256 public mahaRewardPerHour = 13 * 1e18;
     uint256 public expectedVolumePerHour = 10000 * 1e18;
+
+    /**
+     * Modifiers
+     */
+
+    modifier onlyFactory {
+        require(msg.sender == address(factory), 'Controller: Forbidden');
+
+        _;
+    }
+
+    modifier onlyPair {
+        require(msg.sender == factory.getPair(token0, token1), 'Controller: forbidden');
+
+        _;
+    }
+
+    /**
+     * Constructor.
+     */
+    constructor(address _factory) {
+        factory = IArthswapV1Factory(_factory);
+    }
 
     /**
      * Getters.
@@ -74,19 +103,19 @@ contract IncentiveController is Ownable {
      * Setters.
      */
 
-    function setToken(address newToken) public onlyOwner {
+    function setToken(address newToken) public onlyFactory {
         require(newToken != address(0), 'Pair: invalid token');
 
         token = ICustomERC20(newToken);
     }
 
-    function setPenaltyPrice(uint256 newPenaltyPrice) public onlyOwner {
+    function setPenaltyPrice(uint256 newPenaltyPrice) public onlyFactory {
         require(newPenaltyPrice > 0, 'Pair: invalid price');
 
         penaltyPrice = newPenaltyPrice;
     }
 
-    function setRewardPrice(uint256 newRewardPrice) public onlyOwner {
+    function setRewardPrice(uint256 newRewardPrice) public onlyFactory {
         require(newRewardPrice > 0, 'Pair: invalid price');
 
         rewardPrice = newRewardPrice;
@@ -98,7 +127,7 @@ contract IncentiveController is Ownable {
         uniswapOracle = IUniswapOracle(newUniswapOracle);
     }
 
-    function setGmuOracle(address newGmuOracle) public onlyOwner {
+    function setGmuOracle(address newGmuOracle) public onlyFactory {
         require(newGmuOracle != address(0), 'Pair: invalid oracle');
 
         gmuOracle = ISimpleOracle(newGmuOracle);
@@ -119,7 +148,7 @@ contract IncentiveController is Ownable {
         address from,
         uint256 amountA,
         uint256 amountB
-    ) public virtual {
+    ) public virtual onlyPair {
         // 1. Get the k for A in terms of B.
         uint256 priceA = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
 
