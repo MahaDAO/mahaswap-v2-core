@@ -138,6 +138,8 @@ contract IncentiveController is Ownable {
         address tokenB,
         uint256 reserveA,
         uint256 reserveB,
+        uint256 newReserveA,
+        uint256 newReserveB,
         address from,
         address to,
         uint256 amountOutA,
