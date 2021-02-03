@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.5.16;
+pragma solidity ^0.7.4;
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 import './UniswapV2Pair.sol';
 import './ArthswapV1Pair.sol';
 import './interfaces/ICustomERC20.sol';
-import '../interfaces/ISimpleOracle.sol';
-import '../interfaces/IUniswapOracle.sol';
+import './interfaces/ISimpleOracle.sol';
+import './interfaces/IUniswapOracle.sol';
 import './interfaces/IUniswapV2Factory.sol';
+import './interfaces/IArthswapV1Factory.sol';
 
-contract ArthswapV1Factory is IUniswapV2Factory, Ownable {
+contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
     /**
      * State variables.
      */
@@ -23,8 +24,9 @@ contract ArthswapV1Factory is IUniswapV2Factory, Ownable {
     // Default uniswap factory for pairs that aren't created arthswap.
     IUniswapV2Factory defaultFactory;
 
+    // Pair management.
     address[] public allPairs;
-    mapping(address => mapping(address => address)) public _getPair;
+    mapping(address => mapping(address => address)) public pairs;
 
     /**
      * Event.
@@ -35,9 +37,9 @@ contract ArthswapV1Factory is IUniswapV2Factory, Ownable {
      * Constructor.
      */
     constructor(address _defaultFactory, address _feeToSetter) public {
-        defaultFactory = IUniswapV2Factory(_defaultFactory);
-
         feeToSetter = _feeToSetter;
+
+        defaultFactory = IUniswapV2Factory(_defaultFactory);
     }
 
     /**
@@ -49,11 +51,11 @@ contract ArthswapV1Factory is IUniswapV2Factory, Ownable {
     }
 
     function getPair(address token0, address token1) public returns (address) {
-        if (_getPair[token0][token1] == address(0)) {
+        if (pairs[token0][token1] == address(0)) {
             return defaultFactory.getPair[token][token1];
         }
 
-        return _getPair[token0][token1];
+        return pairs[token0][token1];
     }
 
     /**
@@ -67,59 +69,72 @@ contract ArthswapV1Factory is IUniswapV2Factory, Ownable {
 
         require(token0 != address(0), 'ArthswapV1: ZERO_ADDRESS');
         // A single check is sufficient.
-        require(_getPair[token0][token1] == address(0), 'ArthswapV1: PAIR_EXISTS');
+        require(pairs[token0][token1] == address(0), 'ArthswapV1: PAIR_EXISTS');
 
         // NOTE: shouln't this be created on for ArthswapV1Pair?
-        bytes memory bytecode = type(UniswapV2Pair).creationCode;
+        // bytes memory bytecode = type(UniswapV2Pair).creationCode;
+        bytes memory bytecode = type(ArthswapV1Pair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
 
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
 
-        IUniswapV2Pair(pair).initialize(token0, token1);
+        // IUniswapV2Pair(pair).initialize(token0, token1);
+        IArthswapV1Pair(pair).initialize(token0, token1);
 
-        _getPair[token0][token1] = pair;
-        _getPair[token1][token0] = pair; // Also populate mapping in the reverse direction.
+        pairs[token0][token1] = pair;
+        pairs[token1][token0] = pair; // Also populate mapping in the reverse direction.
         allPairs.push(pair);
 
         emit PairCreated(token0, token1, pair, allPairs.length);
     }
 
-    // todo check this yash
+    function setFeeTo(address _feeTo) external {
+        require(msg.sender == feeToSetter || msg.sender == owner(), 'ArthswapV1: FORBIDDEN');
+
+        feeTo = _feeTo;
+    }
+
+    function setFeeToSetter(address _feeToSetter) external {
+        require(msg.sender == feeToSetter || msg.sender == owner(), 'ArthswapV1: FORBIDDEN');
+
+        feeToSetter = _feeToSetter;
+    }
+
     function setIncentiveControllerForPair(
         address token0,
         address token1,
         address controller
-    ) onlyOwner {
-        address pair = _getPair[token0][token1];
+    ) public onlyOwner {
+        address pair = pairs[token0][token1];
 
         require(address(pair) != address(0), 'ArthswapV1: invalid pair');
 
-        IUniswapV2Pair(pair).setIncentiveController(controller);
+        IArthswapV1Pair(pair).setIncentiveController(controller);
     }
 
     function setSwapingPausedForPair(
         address token0,
         address token1,
         bool isSet
-    ) onlyOwner {
-        address pair = _getPair[token0][token1];
+    ) public onlyOwner {
+        address pair = pairs[token0][token1];
 
         require(address(pair) != address(0), 'ArthswapV1: invalid pair');
 
-        IUniswapV2Pair(pair).setSwapingPaused(isSet);
+        IArthswapV1Pair(pair).setSwapingPaused(isSet);
     }
 
     function setUseOracleForPair(
         address token0,
         address token1,
         bool isSet
-    ) onlyOwner {
-        address pair = _getPair[token0][token1];
+    ) public onlyOwner {
+        address pair = pairs[token0][token1];
 
         require(address(pair) != address(0), 'ArthswapV1: invalid pair');
 
-        IUniswapV2Pair(pair).setUseOracle(isSet);
+        IArthswapV1Pair(pair).setUseOracle(isSet);
     }
 }
