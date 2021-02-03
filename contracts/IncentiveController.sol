@@ -157,7 +157,9 @@ contract IncentiveController {
             // If penalty is on then we burn penalty token.
 
             // 3. Check if action is sell.
-            require(amountA == 0 && amountB > 0, 'Controller: This is not sell tx');
+            if (amountA > 0) return;
+
+            // require(amountA == 0 && amountB > 0, 'Controller: This is not sell tx');
 
             // 4-a. Get amount of A we are selling as per the current price.
             uint256 amountToBurn = priceA.mul(uint256(amountB));
@@ -177,7 +179,9 @@ contract IncentiveController {
             // If reward is on then we transfer the rewards as per reward rate and tx volumne.
 
             // 3. Check if the action is to buy.
-            require(amountA > 0 && amountB >= 0, 'Controller: This is not buy tx');
+            if (amountA == 0) return;
+
+            // require(amountA > 0 && amountB >= 0, 'Controller: This is not buy tx');
 
             // 4-a. Based on volumne of the tx & hourly rate, figure out the amount to reward.
             uint256 rate = token.balanceOf(address(this)).div(30).div(24); // Calculate the rate for curr. period.
