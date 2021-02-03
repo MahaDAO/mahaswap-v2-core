@@ -46,6 +46,6 @@
   },
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "@openzeppelin/contracts": "^3.3.0"
+    "@openzeppelin/contracts": "^3.4.0"
   }
 }
