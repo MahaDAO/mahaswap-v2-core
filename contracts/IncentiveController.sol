@@ -1,21 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.5.16;
+pragma solidity ^0.7.4;
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 
-import './interfaces/ICustomERC20.sol';
-import './interfaces/IUniswapV2Pair.sol';
-import '../interfaces/ISimpleOracle.sol';
-import '../interfaces/IUniswapOracle.sol';
-import './UniswapV2ERC20.sol';
 import './libraries/Math.sol';
 import './libraries/UQ112x112.sol';
-import './interfaces/IERC20.sol';
-import './interfaces/IUniswapV2Factory.sol';
-import './interfaces/IUniswapV2Callee.sol';
+import './interfaces/ICustomERC20.sol';
+import './interfaces/ISimpleOracle.sol';
+import './interfaces/IUniswapOracle.sol';
 
-contract IncentiveController is IUniswapV2Pair, UniswapV2ERC20, Ownable {
+contract IncentiveController is Ownable {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
