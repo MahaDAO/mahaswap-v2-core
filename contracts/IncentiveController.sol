@@ -119,12 +119,12 @@ contract IncentiveController is Ownable {
         address from,
         uint256 amountA,
         uint256 amountB
-    ) public virtual returns (uint256 amountA, uint256 amountB) {
+    ) public virtual {
         // 1. Get the k for A in terms of B.
         uint256 priceA = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
 
         // 2. Check if k < penaltyPrice.
-        uint256 priceToPayPenalty = getPenaltyPrice(tokenA); // NOTE: we use tokenA since tokenA is always sell.
+        uint256 priceToPayPenalty = getPenaltyPrice(tokenA);
         if (priceA < priceToPayPenalty) {
             // If penalty is on then we burn penalty token.
 
@@ -136,7 +136,7 @@ contract IncentiveController is Ownable {
 
             // 4-b. Burn maha, based on the volumne of the tx figure out the amount to burn.
             // NOTE: amount has to be approved from frontend.
-            token.burnFrom(from, amountIn);
+            token.burnFrom(from, amountToBurn);
 
             // TODO: set approved amount to 0.
 
