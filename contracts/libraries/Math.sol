@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity =0.5.16;
 
 /**
  * A library for performing various math operations
@@ -8,6 +8,10 @@ pragma solidity >=0.6.0 <0.8.0;
 library Math {
     function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x < y ? x : y;
+    }
+
+    function max(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        z = x > y ? x : y;
     }
 
     // Babylonian method (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)

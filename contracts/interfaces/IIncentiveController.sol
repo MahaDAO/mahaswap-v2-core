@@ -1,17 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity >=0.5.0;
 
 interface IIncentiveController {
     function conductChecks(
-        address tokenA,
-        address tokenB,
-        uint112 reserveA,
-        uint112 reserveB,
-        uint112 newReserveA,
-        uint112 newReserveB,
-        address to,
-        uint256 amountOutA,
-        uint256 amountOutB
+        uint256 amount0In,
+        uint256 amount1In,
+        uint256 amount0Out,
+        uint256 amount1Out,
+        address to
     ) external;
 }

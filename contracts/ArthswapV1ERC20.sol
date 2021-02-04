@@ -1,44 +1,31 @@
-// SPDX-License-Identifier: MIT
+pragma solidity =0.5.16;
 
-pragma solidity >=0.6.0 <0.8.0;
+import './interfaces/IUniswapV2ERC20.sol';
+import './libraries/SafeMath.sol';
 
-import '@openzeppelin/contracts/math/SafeMath.sol';
-
-import './interfaces/IArthswapV1ERC20.sol';
-
-contract ArthswapV1ERC20 is IArthswapV1ERC20 {
+contract ArthswapV1ERC20 is IUniswapV2ERC20 {
     using SafeMath for uint256;
 
-    /**
-     * State variables.
-     */
+    string public constant name = 'MahaSwap V1';
+    string public constant symbol = 'MSWAP-V1';
+    uint8 public constant decimals = 18;
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
 
-    uint256 public override totalSupply;
-    uint8 public constant override decimals = 18;
-    string public constant override name = 'Arthswap V1';
-    string public constant override symbol = 'ARTHSWAP-V1';
-
-    mapping(address => uint256) public override nonces;
-    mapping(address => uint256) public override balanceOf;
-    mapping(address => mapping(address => uint256)) public override allowance;
-
-    bytes32 public override DOMAIN_SEPARATOR;
-    // NOTE: Might need to change this hash.
-    bytes32 public constant override PERMIT_TYPEHASH =
-        0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
-
+    bytes32 public DOMAIN_SEPARATOR;
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    mapping(address => uint256) public nonces;
 
-    /**
-     * Constructor.
-     */
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
     constructor() public {
         uint256 chainId;
-
         assembly {
-            chainId := chainid()
+            chainId := chainid
         }
-
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
@@ -50,21 +37,15 @@ contract ArthswapV1ERC20 is IArthswapV1ERC20 {
         );
     }
 
-    /**
-     * Mutations.
-     */
-
     function _mint(address to, uint256 value) internal {
         totalSupply = totalSupply.add(value);
         balanceOf[to] = balanceOf[to].add(value);
-
         emit Transfer(address(0), to, value);
     }
 
     function _burn(address from, uint256 value) internal {
         balanceOf[from] = balanceOf[from].sub(value);
         totalSupply = totalSupply.sub(value);
-
         emit Transfer(from, address(0), value);
     }
 
@@ -74,7 +55,6 @@ contract ArthswapV1ERC20 is IArthswapV1ERC20 {
         uint256 value
     ) private {
         allowance[owner][spender] = value;
-
         emit Approval(owner, spender, value);
     }
 
@@ -85,17 +65,15 @@ contract ArthswapV1ERC20 is IArthswapV1ERC20 {
     ) private {
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
-
         emit Transfer(from, to, value);
     }
 
-    function approve(address spender, uint256 value) external override returns (bool) {
+    function approve(address spender, uint256 value) external returns (bool) {
         _approve(msg.sender, spender, value);
-
         return true;
     }
 
-    function transfer(address to, uint256 value) external override returns (bool) {
+    function transfer(address to, uint256 value) external returns (bool) {
         _transfer(msg.sender, to, value);
         return true;
     }
@@ -104,12 +82,11 @@ contract ArthswapV1ERC20 is IArthswapV1ERC20 {
         address from,
         address to,
         uint256 value
-    ) external override returns (bool) {
-        if (allowance[from][msg.sender] != uint256(-1))
+    ) external returns (bool) {
+        if (allowance[from][msg.sender] != uint256(-1)) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
-
+        }
         _transfer(from, to, value);
-
         return true;
     }
 
@@ -121,9 +98,8 @@ contract ArthswapV1ERC20 is IArthswapV1ERC20 {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external override {
+    ) external {
         require(deadline >= block.timestamp, 'UniswapV2: EXPIRED');
-
         bytes32 digest =
             keccak256(
                 abi.encodePacked(
@@ -132,11 +108,8 @@ contract ArthswapV1ERC20 is IArthswapV1ERC20 {
                     keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner]++, deadline))
                 )
             );
-
         address recoveredAddress = ecrecover(digest, v, r, s);
-
         require(recoveredAddress != address(0) && recoveredAddress == owner, 'UniswapV2: INVALID_SIGNATURE');
-
         _approve(owner, spender, value);
     }
 }

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity =0.5.16;
 
-import '@openzeppelin/contracts/math/Math.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
+import './libraries/SafeMath.sol';
+import './libraries/Math.sol';
+import './libraries/Ownable.sol';
 
 contract Epoch is Ownable {
     using SafeMath for uint256;
@@ -35,8 +35,7 @@ contract Epoch is Ownable {
     }
 
     modifier checkEpoch {
-        require(now > startTime, 'Epoch: not started yet');
-        require(callable(), 'Epoch: not allowed');
+        require(canUpdate(), 'Epoch: not allowed');
 
         _;
 

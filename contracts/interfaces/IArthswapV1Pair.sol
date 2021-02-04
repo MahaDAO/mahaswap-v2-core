@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity >=0.5.0;
 
 interface IArthswapV1Pair {
     function MINIMUM_LIQUIDITY() external pure returns (uint256);
