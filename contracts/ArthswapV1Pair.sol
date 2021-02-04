@@ -9,10 +9,10 @@ import './libraries/Math.sol';
 import './ArthswapV1ERC20.sol';
 import './interfaces/IERC20.sol';
 import './libraries/UQ112x112.sol';
-import './IncentiveController.sol';
 import './interfaces/IArthswapV1Pair.sol';
 import './interfaces/IArthswapV1Callee.sol';
 import './interfaces/IArthswapV1Factory.sol';
+import './interfaces/IIncentiveController.sol';
 
 contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     using SafeMath for uint256;
@@ -22,23 +22,23 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
      * State variables.
      */
 
-    uint256 public constant MINIMUM_LIQUIDITY = 10**3;
+    uint256 public constant override MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
-    address public token0;
-    address public token1;
-    address public factory;
+    address public override token0;
+    address public override token1;
+    address public override factory;
 
     uint112 private reserve0; // Uses single storage slot, accessible via getReserves.
     uint112 private reserve1; // Uses single storage slot, accessible via getReserves.
     uint32 private blockTimestampLast; // Uses single storage slot, accessible via getReserves.
 
-    uint256 public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event.
-    uint256 public price0CumulativeLast;
-    uint256 public price1CumulativeLast;
+    uint256 public override kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event.
+    uint256 public override price0CumulativeLast;
+    uint256 public override price1CumulativeLast;
 
     // Controller which controls the incentives.
-    IncentiveController controller;
+    IIncentiveController public controller;
 
     // Used to pause swaping activity.
     bool swapingPaused = false;
@@ -64,25 +64,9 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     }
 
     /**
-     * Events.
-     */
-
-    event Mint(address indexed sender, uint256 amount0, uint256 amount1);
-    event Burn(address indexed sender, uint256 amount0, uint256 amount1, address indexed to);
-    event Swap(
-        address indexed sender,
-        uint256 amount0In,
-        uint256 amount1In,
-        uint256 amount0Out,
-        uint256 amount1Out,
-        address indexed to
-    );
-    event Sync(uint112 reserve0, uint112 reserve1);
-
-    /**
      * Constructor.
      */
-    constructor() public {
+    constructor() {
         factory = msg.sender;
     }
 
@@ -97,7 +81,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     function setIncentiveController(address newController) public onlyOwner {
         require(newController != address(0), 'Pair: invalid address');
 
-        controller = newController;
+        controller = IIncentiveController(newController);
     }
 
     /**
@@ -107,6 +91,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     function getReserves()
         public
         view
+        override
         returns (
             uint112 _reserve0,
             uint112 _reserve1,
@@ -129,7 +114,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     }
 
     // Called once by the factory at time of deployment.
-    function initialize(address _token0, address _token1) external {
+    function initialize(address _token0, address _token1) external override {
         require(msg.sender == factory, 'ArthswapV1: FORBIDDEN'); // Sufficient check.
 
         token0 = _token0;
@@ -185,7 +170,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     }
 
     // This low-level function should be called from a contract which performs important safety checks.
-    function mint(address to) external lock returns (uint256 liquidity) {
+    function mint(address to) external override lock returns (uint256 liquidity) {
         (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
 
         uint256 balance0 = IERC20(token0).balanceOf(address(this));
@@ -215,7 +200,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     }
 
     // This low-level function should be called from a contract which performs important safety checks.
-    function burn(address to) external lock returns (uint256 amount0, uint256 amount1) {
+    function burn(address to) external override lock returns (uint256 amount0, uint256 amount1) {
         (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
 
         address _token0 = token0; // Gas savings.
@@ -250,7 +235,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         uint256 amount1Out,
         address to,
         bytes calldata data
-    ) external checkIfPaused lock {
+    ) external override checkIfPaused lock {
         require(amount0Out > 0 || amount1Out > 0, 'ArthswapV1: INSUFFICIENT_OUTPUT_AMOUNT');
 
         (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // Gas savings.
@@ -296,9 +281,9 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         // Get reserves after the trade was made.
         (uint112 _newReserve0, uint112 _newReserve1, ) = getReserves(); // Gas savings.
         if (address(controller) != address(0)) {
-            IncentiveController(controller).conductChecks(
-                _token0,
-                _token1,
+            IIncentiveController(controller).conductChecks(
+                token0,
+                token1,
                 _reserve0,
                 _reserve1,
                 _newReserve0,
@@ -314,7 +299,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     }
 
     // Force balances to match reserves.
-    function skim(address to) external lock {
+    function skim(address to) external override lock {
         address _token0 = token0; // Gas savings.
         address _token1 = token1; // Gas savings.
 
@@ -323,7 +308,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     }
 
     // Force reserves to match balances.
-    function sync() external lock {
+    function sync() external override lock {
         _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
     }
 }

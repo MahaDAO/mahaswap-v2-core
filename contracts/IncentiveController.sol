@@ -11,11 +11,12 @@ import './interfaces/ICustomERC20.sol';
 import './interfaces/ISimpleOracle.sol';
 import './interfaces/IUniswapOracle.sol';
 import './interfaces/IArthswapV1Factory.sol';
+import './interfaces/IIncentiveController.sol';
 
 /**
  * NOTE: Contract ArthswapV1Pair should be the owner of this controller.
  */
-contract IncentiveController is Ownable {
+contract IncentiveController is IIncentiveController, Ownable {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
@@ -250,7 +251,7 @@ contract IncentiveController is Ownable {
         address to,
         uint256 amountOutA,
         uint256 amountOutB
-    ) public virtual onlyOwner {
+    ) public virtual override onlyOwner {
         require(tokenA == protocolTokenAddress || tokenB == protocolTokenAddress, 'Controller: invalid config');
 
         bool isTokenAProtocolToken = tokenA == protocolTokenAddress;
