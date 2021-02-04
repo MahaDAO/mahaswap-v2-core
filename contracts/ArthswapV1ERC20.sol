@@ -32,7 +32,7 @@ contract ArthswapV1ERC20 is IArthswapV1ERC20 {
     /**
      * Constructor.
      */
-    constructor() {
+    constructor() public {
         uint256 chainId;
 
         assembly {

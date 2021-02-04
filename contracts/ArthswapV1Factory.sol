@@ -30,7 +30,7 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
     /**
      * Constructor.
      */
-    constructor(address _defaultFactory, address _feeToSetter) {
+    constructor(address _defaultFactory, address _feeToSetter) public {
         feeToSetter = _feeToSetter;
 
         defaultFactory = IUniswapV2Factory(_defaultFactory);

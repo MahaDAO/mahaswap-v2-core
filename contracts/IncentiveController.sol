@@ -64,7 +64,7 @@ contract IncentiveController is IIncentiveController, Ownable {
     /**
      * Constructor.
      */
-    constructor(address _factoryAddress, address _protocolTokenAddress) {
+    constructor(address _factoryAddress, address _protocolTokenAddress) public {
         factoryAddress = _factoryAddress;
 
         protocolTokenAddress = _protocolTokenAddress;

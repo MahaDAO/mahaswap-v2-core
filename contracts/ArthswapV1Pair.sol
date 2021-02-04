@@ -66,7 +66,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
     /**
      * Constructor.
      */
-    constructor() {
+    constructor() public {
         factory = msg.sender;
     }
 
