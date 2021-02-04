@@ -12,6 +12,7 @@ interface IIncentiveController {
         uint256 amountOutB,
         uint256 amountInA,
         uint256 amountInB,
+        address from,
         address to
     ) external;
 }

@@ -125,11 +125,19 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         // % of deviation from target price = (tgt_price - price) / price
         // amountToburn = sellVolume * % of deviation from target price * % of pool * 100
 
-        uint256 percentOfPool = sellVolume.div(liquidity).mul(1e18);
-        uint256 deviationFromTarget = targetPrice.sub(price).div(targetPrice).mul(1e18);
-
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
-        return sellVolume.mul(deviationFromTarget).mul(percentOfPool).mul(100).div(uint256(2).mul(1e18));
+        return
+            sellVolume
+                .mul(
+                // deviationFromTarget
+                targetPrice.sub(price).mul(1e18).div(targetPrice)
+            )
+                .mul(
+                // percentOfPool
+                sellVolume.mul(1e18).div(liquidity)
+            )
+                .mul(100)
+                .div(2 * 1e18);
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
@@ -178,23 +186,18 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         uint256 targetPrice,
         uint256 sellVolume,
         uint256 liquidity,
-        address penalized
+        address to
     ) private {
         uint256 amountToBurn = estimatePenaltyToCharge(price, targetPrice, liquidity, sellVolume);
 
         if (amountToBurn > 0) {
             // NOTE: amount has to be approved from frontend.
             // Burn and charge penalty.
-            token.burnFrom(penalized, amountToBurn);
+            token.burnFrom(to, amountToBurn);
         }
     }
 
     function _incentiviseTrade(uint256 buyVolume, address to) private {
-        // if (amountRewardedThisHour >= availableRewardThisHour) return;
-
-        // Calculate the rate for curr. period.
-        // uint256 rate = token.balanceOf(address(this)).mul(1e18).div(30).div(24);
-
         // Calculate the amount as per volumne and rate.
         // Cap the amount to a maximum rewardPerHour if amount > maxRewardPerHour.
         uint256 amountToReward = Math.min(estimateRewardToGive(buyVolume), availableRewardThisHour);
@@ -222,6 +225,7 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         uint256 amountOutB,
         uint256 amountInA,
         uint256 amountInB,
+        address from,
         address to
     ) public onlyPair {
         if (isTokenAProtocolToken) {
@@ -260,7 +264,7 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         }
 
         // Check if we are buying and below the target price
-        if (priceA < getRewardIncentivePrice() && amountOutA > 0) {
+        if (amountOutA > 0 && priceA < getRewardIncentivePrice()) {
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
             _incentiviseTrade(amountOutA, to);
