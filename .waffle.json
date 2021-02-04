@@ -1,5 +1,5 @@
 {
-  "compilerVersion": "./node_modules/solc",
+  "compilerVersion": "0.6.12",
   "outputType": "all",
   "compilerOptions": {
     "outputSelection": {
@@ -12,7 +12,9 @@
           "evm.deployedBytecode.sourceMap",
           "metadata"
         ],
-        "": ["ast"]
+        "": [
+          "ast"
+        ]
       }
     },
     "evmVersion": "istanbul",
