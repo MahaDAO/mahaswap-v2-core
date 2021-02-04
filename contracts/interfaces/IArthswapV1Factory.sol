@@ -37,11 +37,5 @@ interface IArthswapV1Factory {
         bool isSet
     ) external;
 
-    function setUseOracleForPair(
-        address token0,
-        address token1,
-        bool isSet
-    ) external;
-
     function createPair(address tokenA, address tokenB) external returns (address pair);
 }

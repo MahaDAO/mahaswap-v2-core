@@ -74,11 +74,11 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
      * Setters
      */
 
-    function setSwapingPaused(bool isSet) public onlyOwner {
+    function setSwapingPaused(bool isSet) public override onlyOwner {
         swapingPaused = isSet;
     }
 
-    function setIncentiveController(address newController) public onlyOwner {
+    function setIncentiveController(address newController) external override onlyOwner {
         require(newController != address(0), 'Pair: invalid address');
 
         controller = IIncentiveController(newController);

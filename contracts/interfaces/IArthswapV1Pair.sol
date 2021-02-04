@@ -43,6 +43,10 @@ interface IArthswapV1Pair {
 
     function initialize(address, address) external;
 
+    function setSwapingPaused(bool isSet) external;
+
+    function setIncentiveController(address controller) external;
+
     event Mint(address indexed sender, uint256 amount0, uint256 amount1);
     event Burn(address indexed sender, uint256 amount0, uint256 amount1, address indexed to);
     event Swap(

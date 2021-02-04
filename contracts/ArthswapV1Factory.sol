@@ -4,9 +4,10 @@ pragma solidity >=0.6.0 <0.8.0;
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 
-import './UniswapV2Pair.sol';
 import './ArthswapV1Pair.sol';
-import './IncentiveController.sol';
+
+import {IncentiveController} from './IncentiveController.sol';
+
 import './interfaces/IUniswapV2Factory.sol';
 import './interfaces/IArthswapV1Factory.sol';
 
@@ -15,26 +16,21 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
      * State variables.
      */
 
-    address public feeTo;
+    address public override feeTo;
     // Who can set the feeTo.
-    address public feeToSetter;
+    address public override feeToSetter;
 
     // Default uniswap factory for pairs that aren't created arthswap.
-    IUniswapV2Factory defaultFactory;
+    IUniswapV2Factory public override defaultFactory;
 
     // Pair management.
-    address[] public allPairs;
-    mapping(address => mapping(address => address)) public pairs;
-
-    /**
-     * Event.
-     */
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
+    address[] public override allPairs;
+    mapping(address => mapping(address => address)) public override pairs;
 
     /**
      * Constructor.
      */
-    constructor(address _defaultFactory, address _feeToSetter) public {
+    constructor(address _defaultFactory, address _feeToSetter) {
         feeToSetter = _feeToSetter;
 
         defaultFactory = IUniswapV2Factory(_defaultFactory);
@@ -44,13 +40,13 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
      * Getters.
      */
 
-    function allPairsLength() external view returns (uint256) {
+    function allPairsLength() external view override returns (uint256) {
         return allPairs.length;
     }
 
-    function getPair(address token0, address token1) public returns (address) {
+    function getPair(address token0, address token1) public view override returns (address) {
         if (pairs[token0][token1] == address(0)) {
-            return defaultFactory.getPair[token0][token1];
+            return defaultFactory.getPair(token0, token1);
         }
 
         return pairs[token0][token1];
@@ -60,7 +56,7 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
      * Mutations.
      */
 
-    function createPair(address tokenA, address tokenB) external returns (address pair) {
+    function createPair(address tokenA, address tokenB) external override returns (address pair) {
         require(tokenA != tokenB, 'ArthswapV1: IDENTICAL_ADDRESSES');
 
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
@@ -88,13 +84,13 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
         emit PairCreated(token0, token1, pair, allPairs.length);
     }
 
-    function setFeeTo(address _feeTo) external {
+    function setFeeTo(address _feeTo) external override {
         require(msg.sender == feeToSetter || msg.sender == owner(), 'ArthswapV1: FORBIDDEN');
 
         feeTo = _feeTo;
     }
 
-    function setFeeToSetter(address _feeToSetter) external {
+    function setFeeToSetter(address _feeToSetter) external override {
         require(msg.sender == feeToSetter || msg.sender == owner(), 'ArthswapV1: FORBIDDEN');
 
         feeToSetter = _feeToSetter;
@@ -104,7 +100,7 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
         address token0,
         address token1,
         address controller
-    ) public onlyOwner {
+    ) public override onlyOwner {
         address pair = pairs[token0][token1];
 
         require(address(pair) != address(0), 'ArthswapV1: invalid pair');
@@ -115,32 +111,32 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
     function setIncentiveTokenForController(address controller, address newIncentiveToken) public onlyOwner {
         require(newIncentiveToken != address(0), 'ArthswapV1: invalid address');
 
-        IncentiveToken(controller).setToken(newIncentiveToken);
+        IncentiveController(controller).setToken(newIncentiveToken);
     }
 
-    function setPenaltyPriceForController(address controller, uint256 newPenaltyPrice) public onlyFactory {
+    function setPenaltyPriceForController(address controller, uint256 newPenaltyPrice) public onlyOwner {
         require(newPenaltyPrice > 0, 'Pair: invalid price');
 
-        IncentiveToken(controller).setPenaltyPrice(newPenaltyPrice);
+        IncentiveController(controller).setPenaltyPrice(newPenaltyPrice);
     }
 
-    function setRewardPriceForController(address controller, uint256 newRewardPrice) public onlyFactory {
+    function setRewardPriceForController(address controller, uint256 newRewardPrice) public onlyOwner {
         require(newRewardPrice > 0, 'Pair: invalid price');
 
-        IncentiveToken(controller).setRewardPrice(newRewardPrice);
+        IncentiveController(controller).setRewardPrice(newRewardPrice);
     }
 
-    function setUniswapOracleForController(address controller, address newUniswapOracle) public onlyFactory {
+    function setUniswapOracleForController(address controller, address newUniswapOracle) public onlyOwner {
         require(newUniswapOracle != address(0), 'Pair: invalid oracle');
 
-        IncentiveToken(controller).setUniswapOracle(newUniswapOracle);
+        IncentiveController(controller).setUniswapOracle(newUniswapOracle);
     }
 
     function setSwapingPausedForPair(
         address token0,
         address token1,
         bool isSet
-    ) public onlyOwner {
+    ) public override onlyOwner {
         address pair = pairs[token0][token1];
 
         require(address(pair) != address(0), 'ArthswapV1: invalid pair');
@@ -149,6 +145,6 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
     }
 
     function setUseOracleForController(address controller, bool isSet) public onlyOwner {
-        IncentiveToken(controller).setUseOracle(isSet);
+        IncentiveController(controller).setUseOracle(isSet);
     }
 }
