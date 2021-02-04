@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity ^0.6.12;
 
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
@@ -12,11 +12,12 @@ import './interfaces/ISimpleOracle.sol';
 import './interfaces/IUniswapOracle.sol';
 import './interfaces/IArthswapV1Factory.sol';
 import './interfaces/IIncentiveController.sol';
+import './Epoch.sol';
 
 /**
  * NOTE: Contract ArthswapV1Pair should be the owner of this controller.
  */
-contract ArthIncentiveController is IIncentiveController, Ownable {
+contract ArthIncentiveController is IIncentiveController, Epoch {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
@@ -65,7 +66,11 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
     /**
      * Constructor.
      */
-    constructor(address _pairAddress, address _protocolTokenAddress) public {
+    constructor(
+        address _pairAddress,
+        address _protocolTokenAddress,
+        uint256 startTime
+    ) public Epoch(60 * 60, startTime, 0) {
         pairAddress = _pairAddress;
         protocolTokenAddress = _protocolTokenAddress;
     }
@@ -135,6 +140,13 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
         useOracle = isSet;
     }
 
+    function updateForEpoch() private checkEpoch returns (bool feeOn) {
+        expectedVolumePerHour = currentVolumPerHour;
+        amountRewardedThisHour = 0;
+        mahaRewardPerHour = 13;
+        currentVolumPerHour = 0;
+    }
+
     /**
      * Mutations.
      */
@@ -189,14 +201,14 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
         // Calculate the amount as per volumne and rate.
         // Cap the amount to a maximum rewardPerHour if amount > maxRewardPerHour.
         amountToReward = Math.min(rate.mul(amountToReward), mahaRewardPerHour);
-        amountRewardedThisHour = amountRewardedThisHour.add(amountRewardedThisHour)
+        amountRewardedThisHour = amountRewardedThisHour.add(amountRewardedThisHour);
 
-        if (amountRewardedThisHour >= availableMahaThisHour) return;
+        // if (kjh >= availableMahaThisHour) return;
 
-        if (amountToReward > 0) {
-            // Send reward to the appropriate address.
-            token.transfer(to, amountToReward);
-        }
+        // if (amountToReward > 0) {
+        //     // Send reward to the appropriate address.
+        //     token.transfer(to, amountToReward);
+        // }
     }
 
     /**
@@ -240,6 +252,8 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
         // update volume
         // TODO every hour, zero this out
         currentVolumPerHour = currentVolumPerHour.add(amountOutA);
+
+        if (canUpdate()) updateForEpoch();
 
         // Get the price for the token.
         uint256 price = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
