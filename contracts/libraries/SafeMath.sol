@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.5.16;
+pragma solidity >=0.6.0 <0.8.0;
 
 /**
  * A library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)

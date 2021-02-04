@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.5.16;
+pragma solidity >=0.6.0 <0.8.0;
 
 /**
  * A library for performing various math operations
  */
-
 library Math {
     function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x < y ? x : y;
