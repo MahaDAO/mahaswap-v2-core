@@ -128,6 +128,20 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         emit Sync(reserve0, reserve1);
     }
 
+    // calls our special reward controller
+    function _reward(
+        uint112 _reserve0,
+        uint112 _reserve1,
+        uint256 amount0Out,
+        uint256 amount1Out,
+        uint256 amount0In,
+        uint256 amount1In,
+        address to
+    ) private {
+        if (address(controller) == address(0)) return;
+        controller.conductChecks(_reserve0, _reserve1, amount0Out, amount1Out, amount0In, amount1In, to);
+    }
+
     // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
     function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
         address feeTo = IUniswapV2Factory(factory).feeTo();
@@ -235,12 +249,10 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
             );
         }
 
-        // Get reserves after the trade was made.
-        // (uint112 _newReserve0, uint112 _newReserve1) = getReserves(); // Gas savings.
-        if (address(controller) != address(0)) {
-            IIncentiveController(controller).conductChecks(amount0In, amount1In, amount0Out, amount1Out, to);
-        }
+        // pass on the rewards
+        _reward(_reserve0, _reserve1, amount0Out, amount1Out, amount0In, amount1In, to);
 
+        // Get reserves after the trade was made.
         _update(balance0, balance1, _reserve0, _reserve1);
 
         emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);

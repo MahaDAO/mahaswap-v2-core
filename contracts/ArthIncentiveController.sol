@@ -177,11 +177,9 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         uint256 price,
         uint256 targetPrice,
         uint256 sellVolume,
+        uint256 liquidity,
         address penalized
     ) private {
-        // TODO: calculate liquidity provided by token in pool.
-        uint256 liquidity = IBurnableERC20(pairAddress).balanceOf(pairAddress);
-
         uint256 amountToBurn = estimatePenaltyToCharge(price, targetPrice, liquidity, sellVolume);
 
         if (amountToBurn > 0) {
@@ -216,55 +214,60 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
      * Note we are always selling tokenA.
      */
     function conductChecks(
-        uint256 amountInA,
-        uint256 amountInB,
+        uint112 reserveA,
+        uint112 reserveB,
         uint256 amountOutA,
         uint256 amountOutB,
+        uint256 amountInA,
+        uint256 amountInB,
         address to
     ) public onlyPair {
         // require(tokenA == protocolTokenAddress || tokenB == protocolTokenAddress, 'Controller: invalid config');
         // uint112 amountOutA = 0;
         // uint112 amountOutB = 0;
-        // if (isTokenAProtocolToken) {
-        //     _conductChecks(reserveA, reserveB, newReserveA, to, amountOutA, amountOutB);
-        // } else {
-        //     _conductChecks(reserveB, reserveA, newReserveB, to, amountOutB, amountOutA);
-        // }
+        if (isTokenAProtocolToken) {
+            // then A is ARTH
+            _conductChecks(reserveA, reserveB, amountOutA, amountInA, to);
+        } else {
+            // then B is ARTH
+            _conductChecks(reserveB, reserveA, amountOutB, amountInB, to);
+        }
     }
 
     function _conductChecks(
-        uint112 reserveA, // A is always the token we are buying or selling.
-        uint112 reserveB,
-        uint112 newReserveA,
-        address to,
-        uint256 amountOutA, // The output amount for buy and sell token.
-        uint256 amountOutB
+        uint112 reserveA, // ARTH liquidity
+        uint112 reserveB, // DAI liquidity
+        uint256 amountOutA, // ARTH being bought
+        uint256 amountInA, // ARTH being sold
+        address to
     ) private {
         // update volume
-        // TODO every hour, zero this out
-        currentVolumPerHour = currentVolumPerHour.add(amountOutA);
 
+        // capture volume and snapshot it every hour
+        currentVolumPerHour = currentVolumPerHour.add(amountOutA).add(amountInA);
         if (canUpdate()) updateForEpoch();
 
         // Get the price for the token.
-        uint256 price = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
+        uint256 currentPrice = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
 
         // Check if we are below the targetPrice.
         uint256 penaltyTargetPrice = getPenaltyPrice();
-        if (price < penaltyTargetPrice) {
-            // Check if we are selling.
-            if (newReserveA < reserveA) {
-                // Calculate the amount of tokens sent.
-                _penalizeTrade(price, penaltyTargetPrice, _getAmountIn(amountOutB, reserveA, reserveB), to);
-            }
+
+        // Check if we are selling and if we are blow the target price?
+        if (currentPrice < penaltyTargetPrice && amountInA > 0) {
+            // is the user expecting some DAI? if so then this is a sell order
+            // Calculate the amount of tokens sent.
+            _penalizeTrade(currentPrice, penaltyTargetPrice, amountInA, reserveA, to);
+
+            // stop here to save gas
+            return;
         }
 
-        if (price < getRewardIncentivePrice()) {
-            // Check if we are buying.
-            if (newReserveA > reserveA) {
-                // If we are buying the main protocol token, then we incentivize the tx sender.
-                _incentiviseTrade(amountOutA, to);
-            }
+        // Check if we are buying and below the target price
+        if (currentPrice < getRewardIncentivePrice() && amountOutA > 0) {
+            // is the user expecting some ARTH? if so then this is a sell order
+            // If we are buying the main protocol token, then we incentivize the tx sender.
+            _incentiviseTrade(amountOutA, to);
         }
     }
 }
