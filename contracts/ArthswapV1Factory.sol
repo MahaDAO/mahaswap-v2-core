@@ -55,7 +55,6 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
     /**
      * Mutations.
      */
-
     function createPair(address tokenA, address tokenB) external override returns (address pair) {
         require(tokenA != tokenB, 'ArthswapV1: IDENTICAL_ADDRESSES');
 
@@ -86,7 +85,6 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
 
     function setFeeTo(address _feeTo) external override {
         require(msg.sender == feeToSetter || msg.sender == owner(), 'ArthswapV1: FORBIDDEN');
-
         feeTo = _feeTo;
     }
 
@@ -102,34 +100,7 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
         address controller
     ) public override onlyOwner {
         address pair = pairs[token0][token1];
-
-        require(address(pair) != address(0), 'ArthswapV1: invalid pair');
-
         IArthswapV1Pair(pair).setIncentiveController(controller);
-    }
-
-    function setIncentiveTokenForController(address controller, address newIncentiveToken) public onlyOwner {
-        require(newIncentiveToken != address(0), 'ArthswapV1: invalid address');
-
-        IncentiveController(controller).setToken(newIncentiveToken);
-    }
-
-    function setPenaltyPriceForController(address controller, uint256 newPenaltyPrice) public onlyOwner {
-        require(newPenaltyPrice > 0, 'Pair: invalid price');
-
-        IncentiveController(controller).setPenaltyPrice(newPenaltyPrice);
-    }
-
-    function setRewardPriceForController(address controller, uint256 newRewardPrice) public onlyOwner {
-        require(newRewardPrice > 0, 'Pair: invalid price');
-
-        IncentiveController(controller).setRewardPrice(newRewardPrice);
-    }
-
-    function setUniswapOracleForController(address controller, address newUniswapOracle) public onlyOwner {
-        require(newUniswapOracle != address(0), 'Pair: invalid oracle');
-
-        IncentiveController(controller).setUniswapOracle(newUniswapOracle);
     }
 
     function setSwapingPausedForPair(
@@ -138,13 +109,6 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
         bool isSet
     ) public override onlyOwner {
         address pair = pairs[token0][token1];
-
-        require(address(pair) != address(0), 'ArthswapV1: invalid pair');
-
         IArthswapV1Pair(pair).setSwapingPaused(isSet);
-    }
-
-    function setUseOracleForController(address controller, bool isSet) public onlyOwner {
-        IncentiveController(controller).setUseOracle(isSet);
     }
 }
