@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.7.4;
+pragma solidity >=0.6.0 <0.8.0;
 
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
-import './ArthswapV1ERC20.sol';
 import './libraries/Math.sol';
+import './ArthswapV1ERC20.sol';
 import './interfaces/IERC20.sol';
 import './libraries/UQ112x112.sol';
+import './IncentiveController.sol';
 import './interfaces/IArthswapV1Pair.sol';
 import './interfaces/IArthswapV1Callee.sol';
 import './interfaces/IArthswapV1Factory.sol';
