@@ -156,12 +156,7 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
         }
     }
 
-    function _incentiviseTrade(
-        uint256 price,
-        uint256 amountOutA,
-        uint256 buyVolume,
-        address incentivized
-    ) private {
+    function _incentiviseTrade(uint256 buyVolume, address incentivized) private {
         // if (amountRewardedThisHour >= availableRewardThisHour) return;
 
         // Calculate the rate for curr. period.
@@ -210,7 +205,7 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
     }
 
     function _conductChecks(
-        uint112 reserveA,
+        uint112 reserveA, // A is always the token we are buying or selling.
         uint112 reserveB,
         uint112 newReserveA,
         address to,
@@ -225,10 +220,13 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
         uint256 price = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
 
         // Check if we are below the targetPrice.
-        if (price < getPenaltyPrice()) {
+        uint256 penaltyTargetPrice = getPenaltyPrice();
+        if (price < penaltyTargetPrice) {
             // Check if we are selling.
             if (newReserveA < reserveA) {
-                _penalizeTrade(price, amountOutA, amountOutB, to);
+                // Calculate the amount of tokens sent.
+                uint256 sellVolume = UniswapV2Library.getAmountIn(amountOutB, reserveA, reserveB);
+                _penalizeTrade(price, penaltyTargetPrice, sellVolume, to);
             }
         }
 
@@ -236,7 +234,7 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
             // Check if we are buying.
             if (newReserveA > reserveA) {
                 // If we are buying the main protocol token, then we incentivize the tx sender.
-                _incentiviseTrade(price, amountOutA, amountOutB, to);
+                _incentiviseTrade(amountOutA, to);
             }
         }
     }
