@@ -29,6 +29,10 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
 
     uint256 public price0CumulativeLast;
     uint256 public price1CumulativeLast;
+
+    uint256 public price0Last;
+    uint256 public price1Last;
+
     uint256 public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
     uint256 private unlocked = 1;
@@ -119,8 +123,11 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
             // * never overflows, and + overflow is desired
-            price0CumulativeLast += uint256(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * timeElapsed;
-            price1CumulativeLast += uint256(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;
+            price0Last = uint256(UQ112x112.encode(_reserve1).uqdiv(_reserve0));
+            price1Last = uint256(UQ112x112.encode(_reserve0).uqdiv(_reserve1));
+
+            price0CumulativeLast += price0Last * timeElapsed;
+            price1CumulativeLast += price1Last * timeElapsed;
         }
         reserve0 = uint112(balance0);
         reserve1 = uint112(balance1);
@@ -130,8 +137,6 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
 
     // calls our special reward controller
     function _reward(
-        uint112 _reserve0,
-        uint112 _reserve1,
         uint256 amount0Out,
         uint256 amount1Out,
         uint256 amount0In,
@@ -139,7 +144,17 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
         address to
     ) private {
         if (address(controller) == address(0)) return;
-        controller.conductChecks(_reserve0, _reserve1, amount0Out, amount1Out, amount0In, amount1In, to);
+        controller.conductChecks(
+            reserve0,
+            reserve1,
+            price0Last,
+            price1Last,
+            amount0Out,
+            amount1Out,
+            amount0In,
+            amount1In,
+            to
+        );
     }
 
     // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
@@ -249,10 +264,8 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
             );
         }
 
-        // pass on the rewards
-        _reward(_reserve0, _reserve1, amount0Out, amount1Out, amount0In, amount1In, to);
-
         // Get reserves after the trade was made.
+        _reward(amount0Out, amount1Out, amount0In, amount1In, to);
         _update(balance0, balance1, _reserve0, _reserve1);
 
         emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);

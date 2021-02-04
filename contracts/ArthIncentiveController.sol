@@ -216,55 +216,51 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
     function conductChecks(
         uint112 reserveA,
         uint112 reserveB,
+        uint256 priceALast,
+        uint256 priceBLast,
         uint256 amountOutA,
         uint256 amountOutB,
         uint256 amountInA,
         uint256 amountInB,
         address to
     ) public onlyPair {
-        // require(tokenA == protocolTokenAddress || tokenB == protocolTokenAddress, 'Controller: invalid config');
-        // uint112 amountOutA = 0;
-        // uint112 amountOutB = 0;
         if (isTokenAProtocolToken) {
             // then A is ARTH
-            _conductChecks(reserveA, reserveB, amountOutA, amountInA, to);
+            _conductChecks(reserveA, priceALast, amountOutA, amountInA, to);
         } else {
             // then B is ARTH
-            _conductChecks(reserveB, reserveA, amountOutB, amountInB, to);
+            _conductChecks(reserveB, priceBLast, amountOutB, amountInB, to);
         }
     }
 
     function _conductChecks(
         uint112 reserveA, // ARTH liquidity
-        uint112 reserveB, // DAI liquidity
+        uint256 priceA, // ARTH price
         uint256 amountOutA, // ARTH being bought
         uint256 amountInA, // ARTH being sold
         address to
     ) private {
-        // update volume
-
         // capture volume and snapshot it every hour
         currentVolumPerHour = currentVolumPerHour.add(amountOutA).add(amountInA);
         if (canUpdate()) updateForEpoch();
 
-        // Get the price for the token.
-        uint256 currentPrice = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
-
-        // Check if we are below the targetPrice.
-        uint256 penaltyTargetPrice = getPenaltyPrice();
-
         // Check if we are selling and if we are blow the target price?
-        if (currentPrice < penaltyTargetPrice && amountInA > 0) {
-            // is the user expecting some DAI? if so then this is a sell order
-            // Calculate the amount of tokens sent.
-            _penalizeTrade(currentPrice, penaltyTargetPrice, amountInA, reserveA, to);
+        if (amountInA > 0) {
+            // Check if we are below the targetPrice.
+            uint256 penaltyTargetPrice = getPenaltyPrice();
 
-            // stop here to save gas
-            return;
+            if (priceA < penaltyTargetPrice) {
+                // is the user expecting some DAI? if so then this is a sell order
+                // Calculate the amount of tokens sent.
+                _penalizeTrade(priceA, penaltyTargetPrice, amountInA, reserveA, to);
+
+                // stop here to save gas
+                return;
+            }
         }
 
         // Check if we are buying and below the target price
-        if (currentPrice < getRewardIncentivePrice() && amountOutA > 0) {
+        if (priceA < getRewardIncentivePrice() && amountOutA > 0) {
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
             _incentiviseTrade(amountOutA, to);
