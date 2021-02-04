@@ -5,9 +5,6 @@ pragma solidity >=0.6.0 <0.8.0;
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 import './ArthswapV1Pair.sol';
-
-import {IncentiveController} from './IncentiveController.sol';
-
 import './interfaces/IUniswapV2Factory.sol';
 import './interfaces/IArthswapV1Factory.sol';
 
