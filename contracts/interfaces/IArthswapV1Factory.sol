@@ -11,15 +11,13 @@ interface IArthswapV1Factory {
 
     function feeToSetter() external view returns (address);
 
-    function defaultFactory() external view returns (IUniswapV2Factory);
-
-    function pairs(address tokenA, address tokenB) external view returns (address);
-
     function getPair(address tokenA, address tokenB) external view returns (address pair);
 
     function allPairs(uint256) external view returns (address pair);
 
     function allPairsLength() external view returns (uint256);
+
+    function createPair(address tokenA, address tokenB) external returns (address pair);
 
     function setFeeTo(address) external;
 
@@ -36,6 +34,4 @@ interface IArthswapV1Factory {
         address token1,
         bool isSet
     ) external;
-
-    function createPair(address tokenA, address tokenB) external returns (address pair);
 }

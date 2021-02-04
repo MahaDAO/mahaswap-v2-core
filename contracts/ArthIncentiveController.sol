@@ -125,19 +125,11 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         // % of deviation from target price = (tgt_price - price) / price
         // amountToburn = sellVolume * % of deviation from target price * % of pool * 100
 
+        uint256 percentOfPool = sellVolume.div(liquidity).mul(1e18);
+        uint256 deviationFromTarget = targetPrice.sub(price).div(targetPrice).mul(1e18);
+
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
-        return
-            sellVolume
-                .mul(
-                // deviationFromTarget
-                targetPrice.sub(price).mul(1e18).div(targetPrice)
-            )
-                .mul(
-                // percentOfPool
-                sellVolume.mul(1e18).div(liquidity)
-            )
-                .mul(100)
-                .div(2 * 1e18);
+        return sellVolume.mul(deviationFromTarget).mul(percentOfPool).mul(100).div(uint256(2).mul(1e18));
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
