@@ -10,7 +10,6 @@ import './libraries/UQ112x112.sol';
 import './interfaces/ICustomERC20.sol';
 import './interfaces/ISimpleOracle.sol';
 import './interfaces/IUniswapOracle.sol';
-import './libraries/UniswapV2Library.sol';
 import './interfaces/IArthswapV1Factory.sol';
 import './interfaces/IIncentiveController.sol';
 
@@ -77,6 +76,22 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
         } catch {
             revert('Controller: failed to consult cash price from the oracle');
         }
+    }
+
+    // Given an output amount of an asset and pair reserves,
+    // Returns a required input amount of the other asset.
+    function _getAmountIn(
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) private pure returns (uint256 amountIn) {
+        require(amountOut > 0, 'Controller: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(reserveIn > 0 && reserveOut > 0, 'Controller: INSUFFICIENT_LIQUIDITY');
+
+        uint256 numerator = reserveIn.mul(amountOut).mul(1000);
+        uint256 denominator = reserveOut.sub(amountOut).mul(997);
+
+        amountIn = (numerator / denominator).add(1);
     }
 
     function getPenaltyPrice() public view returns (uint256) {
@@ -226,7 +241,7 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
             // Check if we are selling.
             if (newReserveA < reserveA) {
                 // Calculate the amount of tokens sent.
-                uint256 sellVolume = UniswapV2Library.getAmountIn(amountOutB, reserveA, reserveB);
+                uint256 sellVolume = _getAmountIn(amountOutB, reserveA, reserveB);
                 _penalizeTrade(price, penaltyTargetPrice, sellVolume, to);
             }
         }
