@@ -145,7 +145,7 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
         address penalized
     ) private {
         // TODO: calculate liquidity provided by token in pool.
-        uint256 liquidity = 0;
+        uint256 liquidity = ICustomERC20(pairAddress).balanceOf(pairAddress);
 
         uint256 amountToBurn = estimatePenaltyToCharge(price, targetPrice, liquidity, sellVolume);
 
@@ -156,30 +156,30 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
         }
     }
 
-    // function _incentiviseTrade(
-    //     uint256 price,
-    //     uint256 amountOutA,
-    //     uint256 buyVolume,
-    //     address incentivized
-    // ) private {
-    //     // Calculate the rate for curr. period.
-    //     uint256 rate = token.balanceOf(address(this)).mul(1e18).div(30).div(24);
+    function _incentiviseTrade(
+        uint256 price,
+        uint256 amountOutA,
+        uint256 buyVolume,
+        address incentivized
+    ) private {
+        // if (amountRewardedThisHour >= availableRewardThisHour) return;
 
-    //     uint256 amountToReward = 0;
-    //     // Calculate the amount as per volumne and rate.
-    //     // Cap the amount to a maximum rewardPerHour if amount > maxRewardPerHour.
-    //     amountToReward = rate.mul(buyVolume).mul(100).div(1e18);
+        // Calculate the rate for curr. period.
+        uint256 rate = token.balanceOf(address(this)).mul(1e18).div(30).div(24);
 
-    //     if (amountRewardedThisHour >= availableMahaThisHour) return;
+        uint256 amountToReward = 0;
+        // Calculate the amount as per volumne and rate.
+        // Cap the amount to a maximum rewardPerHour if amount > maxRewardPerHour.
+        amountToReward = rate.mul(buyVolume).mul(100).div(1e18);
 
-    //     amountToReward = Math.min(amountToReward, availableMahaThisHour);
-    //     amountRewardedThisHour = amountRewardedThisHour.add(amountRewardedThisHour);
+        // amountToReward = Math.min(amountToReward, availableRewardThisHour.sub(amountRewardedThisHour));
+        // amountRewardedThisHour = amountRewardedThisHour.add(amountRewardedThisHour);
 
-    //     if (amountToReward > 0) {
-    //         // Send reward to the appropriate address.
-    //         token.transfer(incentivized, amountToReward);
-    //     }
-    // }
+        if (amountToReward > 0) {
+            // Send reward to the appropriate address.
+            token.transfer(incentivized, amountToReward);
+        }
+    }
 
     /**
      * This is the function that burns the MAHA and returns how much ARTH should
@@ -236,7 +236,7 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
             // Check if we are buying.
             if (newReserveA > reserveA) {
                 // If we are buying the main protocol token, then we incentivize the tx sender.
-                // _incentiviseTrade(price, amountOutA, amountOutB, to);
+                _incentiviseTrade(price, amountOutA, amountOutB, to);
             }
         }
     }
