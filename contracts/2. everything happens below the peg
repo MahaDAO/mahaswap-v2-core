@@ -1,4 +1,0 @@
-2. everything happens below the peg
-3. remove return
-4. consider when both amountOut are not 0.
-5. optimize for gas.
