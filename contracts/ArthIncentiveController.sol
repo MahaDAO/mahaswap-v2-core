@@ -225,7 +225,7 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
         uint112 reserveB,
         uint112 newReserveA,
         address to,
-        uint256 amountOutA,
+        uint256 amountOutA, // The output amount for buy and sell token.
         uint256 amountOutB
     ) private {
         // update volume
@@ -241,8 +241,7 @@ contract ArthIncentiveController is IIncentiveController, Ownable {
             // Check if we are selling.
             if (newReserveA < reserveA) {
                 // Calculate the amount of tokens sent.
-                uint256 sellVolume = _getAmountIn(amountOutB, reserveA, reserveB);
-                _penalizeTrade(price, penaltyTargetPrice, sellVolume, to);
+                _penalizeTrade(price, penaltyTargetPrice, _getAmountIn(amountOutB, reserveA, reserveB), to);
             }
         }
 
