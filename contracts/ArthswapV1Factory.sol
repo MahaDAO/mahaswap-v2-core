@@ -50,7 +50,7 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
 
     function getPair(address token0, address token1) public returns (address) {
         if (pairs[token0][token1] == address(0)) {
-            return defaultFactory.getPair[token][token1];
+            return defaultFactory.getPair[token0][token1];
         }
 
         return pairs[token0][token1];
@@ -112,6 +112,30 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
         IArthswapV1Pair(pair).setIncentiveController(controller);
     }
 
+    function setIncentiveTokenForController(address controller, address newIncentiveToken) public onlyOwner {
+        require(newIncentiveToken != address(0), 'ArthswapV1: invalid address');
+
+        IncentiveToken(controller).setToken(newIncentiveToken);
+    }
+
+    function setPenaltyPriceForController(address controller, uint256 newPenaltyPrice) public onlyFactory {
+        require(newPenaltyPrice > 0, 'Pair: invalid price');
+
+        IncentiveToken(controller).setPenaltyPrice(newPenaltyPrice);
+    }
+
+    function setRewardPriceForController(address controller, uint256 newRewardPrice) public onlyFactory {
+        require(newRewardPrice > 0, 'Pair: invalid price');
+
+        IncentiveToken(controller).setRewardPrice(newRewardPrice);
+    }
+
+    function setUniswapOracleForController(address controller, address newUniswapOracle) public onlyFactory {
+        require(newUniswapOracle != address(0), 'Pair: invalid oracle');
+
+        IncentiveToken(controller).setUniswapOracle(newUniswapOracle);
+    }
+
     function setSwapingPausedForPair(
         address token0,
         address token1,
@@ -124,15 +148,7 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
         IArthswapV1Pair(pair).setSwapingPaused(isSet);
     }
 
-    function setUseOracleForPair(
-        address token0,
-        address token1,
-        bool isSet
-    ) public onlyOwner {
-        address pair = pairs[token0][token1];
-
-        require(address(pair) != address(0), 'ArthswapV1: invalid pair');
-
-        IArthswapV1Pair(pair).setUseOracle(isSet);
+    function setUseOracleForController(address controller, bool isSet) public onlyOwner {
+        IncentiveToken(controller).setUseOracle(isSet);
     }
 }
