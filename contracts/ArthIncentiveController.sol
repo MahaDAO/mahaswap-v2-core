@@ -34,9 +34,6 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
     // Token which is the main token of a protocol.
     address public protocolTokenAddress;
 
-    // Used to track targetPrice.
-    ISimpleOracle public gmuOracle;
-
     // Used to track the latest twap price.
     IUniswapOracle public uniswapOracle;
 
@@ -55,9 +52,8 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
     uint256 public currentVolumPerHour = 0;
 
     /**
-     * Modifiers
+     * Modifier.
      */
-
     modifier onlyPair {
         require(msg.sender == pairAddress, 'Controller: Forbidden');
         _;
@@ -87,6 +83,22 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         }
     }
 
+    // Given an output amount of an asset and pair reserves,
+    // Returns a required input amount of the other asset.
+    function _getAmountIn(
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) private pure returns (uint256 amountIn) {
+        require(amountOut > 0, 'Controller: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(reserveIn > 0 && reserveOut > 0, 'Controller: INSUFFICIENT_LIQUIDITY');
+
+        uint256 numerator = reserveIn.mul(amountOut).mul(1000);
+        uint256 denominator = reserveOut.sub(amountOut).mul(997);
+
+        amountIn = (numerator / denominator).add(1);
+    }
+
     function getPenaltyPrice() public view returns (uint256) {
         // If (useOracle) then get penalty price from an oracle
         // else get from a variable.
@@ -95,10 +107,7 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         return _getOraclePrice();
     }
 
-    function getRewardIncentivePrice() public view returns (uint256) {
-        // If (useOracle) then get reward price from an oracle
-        // else get from a variable.
-        // This variable is settable from the factory.
+    function getReward0.1le is settable from the factory.
         if (!useOracle) return rewardPrice;
         return _getOraclePrice();
     }
@@ -108,12 +117,16 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         uint256 targetPrice,
         uint256 liquidity,
         uint256 sellVolume
-    ) public view returns (uint256) {
+    ) public pure returns (uint256) {
         // % of pool = sellVolume / liquidity
         // % of deviation from target price = (tgt_price - price) / price
         // amountToburn = sellVolume * % of deviation from target price * % of pool * 100
 
-        return 0;
+        uint256 percentOfPool = sellVolume.div(liquidity).mul(1e18);
+        uint256 deviationFromTarget = targetPrice.sub(price).div(targetPrice).mul(1e18);
+
+        // NOTE: Shouldn't this be multiplied by 10000 instead of 100
+        return sellVolume.mul(deviationFromTarget).mul(percentOfPool).mul(100).div(uint256(2).mul(1e18));
     }
 
     /**
@@ -151,64 +164,41 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
      * Mutations.
      */
     function _penalizeTrade(
-        uint256 tradingPrice,
-        uint256 amountOutA,
-        uint256 amountOutB,
-        address from
+        uint256 price,
+        uint256 targetPrice,
+        uint256 sellVolume,
+        address penalized
     ) private {
-        // Get the target price
-        uint256 targetPrice = 0;
+        // TODO: calculate liquidity provided by token in pool.
+        uint256 liquidity = ICustomERC20(pairAddress).balanceOf(pairAddress);
 
-        uint256 amountToBurn = estimatePenaltyToCharge(tradingPrice, targetPrice, reserve0);
+        uint256 amountToBurn = estimatePenaltyToCharge(price, targetPrice, liquidity, sellVolume);
 
         if (amountToBurn > 0) {
             // NOTE: amount has to be approved from frontend.
             // Burn and charge penalty.
-            token.burnFrom(from, amountToBurn);
+            token.burnFrom(penalized, amountToBurn);
         }
     }
 
-    function _incentiviseTrade(
-        uint256 price,
-        uint256 amountOutA,
-        uint256 amountOutB,
-        address from
-    ) private {
-        // Check if we are above the reward price.
-        // NOTE: can this be changed to price > getPenaltyPrice()?
+    function _incentiviseTrade(uint256 buyVolume, address incentivized) private {
+        // if (amountRewardedThisHour >= availableRewardThisHour) return;
 
-        // If reward is on then we reward.
-
-        // Based on volumne of the tx & hourly rate, figure out the amount to reward.
-        uint256 rate = token.balanceOf(address(this)).div(30).div(24); // Calculate the rate for curr. period.
+        // Calculate the rate for curr. period.
+        uint256 rate = token.balanceOf(address(this)).mul(1e18).div(30).div(24);
 
         uint256 amountToReward = 0;
-
-        // Check if any amount is 0 or not.
-        if (amountOutA > 0 && amountOutB > 0) {
-            // If not, then set the amount as per the rate and volume of the protocol token.
-            amountToReward = isTokenAProtocolToken ? amountOutA : amountOutB;
-        } else {
-            // If any is 0, then we figure out which one is 0.
-
-            // If A is protocolToken, then amountOutA can not be 0 and vice versa.
-            // However if the other token out amount is 0,
-            // then we calculate the amount being sold as per price and amount of the protocolToken.
-            // Refer Line 165 to 168.
-            amountToReward = rate.mul(price.mul(amountOutA));
-        }
-
         // Calculate the amount as per volumne and rate.
         // Cap the amount to a maximum rewardPerHour if amount > maxRewardPerHour.
-        amountToReward = Math.min(rate.mul(amountToReward), mahaRewardPerHour);
-        amountRewardedThisHour = amountRewardedThisHour.add(amountRewardedThisHour);
+        amountToReward = rate.mul(buyVolume).mul(100).div(1e18);
 
-        // if (kjh >= availableMahaThisHour) return;
+        // amountToReward = Math.min(amountToReward, availableRewardThisHour.sub(amountRewardedThisHour));
+        // amountRewardedThisHour = amountRewardedThisHour.add(amountRewardedThisHour);
 
-        // if (amountToReward > 0) {
-        //     // Send reward to the appropriate address.
-        //     token.transfer(to, amountToReward);
-        // }
+        if (amountToReward > 0) {
+            // Send reward to the appropriate address.
+            token.transfer(incentivized, amountToReward);
+        }
     }
 
     /**
@@ -229,24 +219,22 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         uint256 amountOutB
     ) public virtual override onlyPair {
         require(tokenA == protocolTokenAddress || tokenB == protocolTokenAddress, 'Controller: invalid config');
+
         bool isTokenAProtocolToken = tokenA == protocolTokenAddress;
 
         if (isTokenAProtocolToken) {
-            _conductChecks(tokenA, tokenB, reserveA, reserveB, newReserveA, newReserveB, to, amountOutA, amountOutB);
+            _conductChecks(reserveA, reserveB, newReserveA, to, amountOutA, amountOutB);
         } else {
-            _conductChecks(tokenB, tokenA, reserveB, reserveA, newReserveB, newReserveA, to, amountOutB, amountOutA);
+            _conductChecks(reserveB, reserveA, newReserveB, to, amountOutB, amountOutA);
         }
     }
 
     function _conductChecks(
-        address tokenA,
-        address tokenB,
-        uint112 reserveA,
+        uint112 reserveA, // A is always the token we are buying or selling.
         uint112 reserveB,
         uint112 newReserveA,
-        uint112 newReserveB,
         address to,
-        uint256 amountOutA,
+        uint256 amountOutA, // The output amount for buy and sell token.
         uint256 amountOutB
     ) private {
         // update volume
@@ -259,18 +247,20 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         uint256 price = uint256(UQ112x112.encode(reserveA).uqdiv(reserveB));
 
         // Check if we are below the targetPrice.
-        if (price < getPenaltyPrice()) {
+        uint256 penaltyTargetPrice = getPenaltyPrice();
+        if (price < penaltyTargetPrice) {
             // Check if we are selling.
-            if ((newReserveA < reserveA) && (newReserveB || reserveB)) {
-                _penalizeTrade(price, amountOutA, amountOutB, to);
+            if (newReserveA < reserveA) {
+                // Calculate the amount of tokens sent.
+                _penalizeTrade(price, penaltyTargetPrice, _getAmountIn(amountOutB, reserveA, reserveB), to);
             }
         }
 
         if (price < getRewardIncentivePrice()) {
-            // Check if we are buying
-            if ((newReserveA > reserveA) || (newReserveB > reserveB)) {
+            // Check if we are buying.
+            if (newReserveA > reserveA) {
                 // If we are buying the main protocol token, then we incentivize the tx sender.
-                _incentiviseTrade(price, amountOutA, amountOutB, to);
+                _incentiviseTrade(amountOutA, to);
             }
         }
     }
