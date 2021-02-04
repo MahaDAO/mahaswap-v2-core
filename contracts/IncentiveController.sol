@@ -247,7 +247,6 @@ contract IncentiveController is IIncentiveController, Ownable {
         uint112 reserveB,
         uint112 newReserveA,
         uint112 newReserveB,
-        address from,
         address to,
         uint256 amountOutA,
         uint256 amountOutB
@@ -274,7 +273,7 @@ contract IncentiveController is IIncentiveController, Ownable {
                 _checkAndIncentivize(to, price, amountOutA, amountOutB, isTokenAProtocolToken);
             } else {
                 // Else we penalize the tx sender.
-                _checkAndPenalize(price, amountOutA, amountOutB, isTokenAProtocolToken, from);
+                _checkAndPenalize(price, amountOutA, amountOutB, isTokenAProtocolToken, to);
             }
         }
     }

@@ -288,7 +288,6 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
                 _reserve1,
                 _newReserve0,
                 _newReserve1,
-                msg.sender,
                 to,
                 amount0Out,
                 amount1Out

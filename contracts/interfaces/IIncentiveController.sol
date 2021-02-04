@@ -10,7 +10,6 @@ interface IIncentiveController {
         uint112 reserveB,
         uint112 newReserveA,
         uint112 newReserveB,
-        address from,
         address to,
         uint256 amountOutA,
         uint256 amountOutB
