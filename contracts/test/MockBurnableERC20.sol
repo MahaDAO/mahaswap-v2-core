@@ -41,6 +41,11 @@ contract MockBurnableERC20 is IUniswapV2ERC20 {
         _mint(msg.sender, _totalSupply.mul(10000000000));
     }
 
+    // Just for testing purposes.
+    function mint(address to, uint256 value) public {
+        _mint(to, value);
+    }
+
     function _mint(address to, uint256 value) internal {
         totalSupply = totalSupply.add(value);
         balanceOf[to] = balanceOf[to].add(value);

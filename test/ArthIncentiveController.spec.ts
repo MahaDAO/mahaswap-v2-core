@@ -39,6 +39,9 @@ describe('ArthIncentiveController', () => {
         pair = fixture.pair
         controller = fixture.controller
         incentiveToken = fixture.incentiveToken
+
+        await incentiveToken.mint(controller.address, await incentiveToken.balanceOf(wallet.address));
+        await incentiveToken.approve(controller.address, await incentiveToken.balanceOf(wallet.address));
     })
 
     it('mint', async () => {
@@ -132,8 +135,6 @@ describe('ArthIncentiveController', () => {
 
         const oldBalanceOfIncentiveToken = await incentiveToken.balanceOf(wallet.address);
 
-        console.log(oldBalanceOfIncentiveToken.toString());
-
         const swapAmount = expandTo18Decimals(1)
         const expectedOutputAmount = bigNumberify('1662497915624478906')
         await token0.transfer(pair.address, swapAmount)
@@ -153,7 +154,7 @@ describe('ArthIncentiveController', () => {
         expect(await token1.balanceOf(pair.address)).to.eq(token1Amount.sub(expectedOutputAmount))
         const totalSupplyToken0 = await token0.totalSupply()
         const totalSupplyToken1 = await token1.totalSupply()
-        expect(await incentiveToken.balanceOf(wallet.address)).to.not.eq(oldBalanceOfIncentiveToken);
+        expect(await incentiveToken.balanceOf(wallet.address)).to.lt(oldBalanceOfIncentiveToken);
         expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(token0Amount).sub(swapAmount))
         expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
     })
@@ -162,6 +163,8 @@ describe('ArthIncentiveController', () => {
         const token0Amount = expandTo18Decimals(5)
         const token1Amount = expandTo18Decimals(10)
         await addLiquidity(token0Amount, token1Amount)
+
+        const oldBalanceOfIncentiveToken = await incentiveToken.balanceOf(wallet.address);
 
         const swapAmount = expandTo18Decimals(1)
         const expectedOutputAmount = bigNumberify('453305446940074565')
@@ -174,8 +177,6 @@ describe('ArthIncentiveController', () => {
             .to.emit(pair, 'Swap')
             .withArgs(wallet.address, 0, swapAmount, expectedOutputAmount, 0, wallet.address)
 
-        await incentiveToken.transfer(controller.address, await incentiveToken.balanceOf(wallet.address));
-
         const reserves = await pair.getReserves()
         expect(reserves[0]).to.eq(token0Amount.sub(expectedOutputAmount))
         expect(reserves[1]).to.eq(token1Amount.add(swapAmount))
@@ -183,6 +184,7 @@ describe('ArthIncentiveController', () => {
         expect(await token1.balanceOf(pair.address)).to.eq(token1Amount.add(swapAmount))
         const totalSupplyToken0 = await token0.totalSupply()
         const totalSupplyToken1 = await token1.totalSupply()
+        expect(await incentiveToken.balanceOf(wallet.address)).to.gt(oldBalanceOfIncentiveToken);
         expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(token0Amount).add(expectedOutputAmount))
         expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).sub(swapAmount))
     })
