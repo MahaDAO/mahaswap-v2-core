@@ -177,7 +177,7 @@ describe('ArthswapV1Pair', () => {
     await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
     const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides)
     const receipt = await tx.wait()
-    expect(receipt.gasUsed).to.lte(73462)
+    expect(receipt.gasUsed).to.eq(77801)
   })
 
   it('burn', async () => {
