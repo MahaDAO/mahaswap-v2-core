@@ -193,7 +193,7 @@ contract MockController is Epoch {
         uint256 amountInA,
         address to
     ) public returns (uint256) {
-        _conductChecks(reserveA, priceALast, amountOutA, amountInA, to);
+        return _conductChecks(reserveA, priceALast, amountOutA, amountInA, to);
     }
 
     function _conductChecks(
