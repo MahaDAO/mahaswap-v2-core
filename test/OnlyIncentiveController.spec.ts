@@ -37,14 +37,12 @@ describe('OnlyIncentiveController', () => {
             parseEther('0.60'),
             parseEther('0'),
             parseEther('10000'),
-            1
         ],
         [
             parseEther('1000000'),
             parseEther('0.10'),
             parseEther('0'),
             parseEther('100000'),
-            1
         ],
     ]
 
@@ -69,7 +67,7 @@ describe('OnlyIncentiveController', () => {
                 await incentiveToken.balanceOf(wallet.address)
             ).to.lt(oldBalance);
 
-            console.log(oldBalance.sub(await incentiveToken.balanceOf(wallet.address)).toString());
+            console.log(`Buy:case:${i}`, oldBalance.sub(await incentiveToken.balanceOf(wallet.address)).toString());
         })
     })
 
@@ -86,14 +84,12 @@ describe('OnlyIncentiveController', () => {
             parseEther('0.20'),
             parseEther('100000'),
             parseEther('0'),
-            1
         ],
         [
             parseEther('1000000'),
             parseEther('0.10'),
             parseEther('100000'),
             parseEther('0'),
-            1
         ],
 
     ]
@@ -120,7 +116,7 @@ describe('OnlyIncentiveController', () => {
                 await incentiveToken.balanceOf(wallet.address)
             ).to.gt(oldBalance);
 
-            console.log(`Testcase ${i}`, (await incentiveToken.balanceOf(wallet.address)).sub(oldBalance).toString());
+            console.log(`Buy:case:${i}`, (await incentiveToken.balanceOf(wallet.address)).sub(oldBalance).toString());
         })
     })
 })
