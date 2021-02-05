@@ -34,14 +34,6 @@ contract Epoch is Ownable {
         _;
     }
 
-    modifier checkEpoch {
-        require(canUpdate(), 'Epoch: not allowed');
-
-        _;
-
-        lastExecutedAt = block.timestamp;
-    }
-
     /* ========== VIEW FUNCTIONS ========== */
 
     function canUpdate() public view returns (bool) {

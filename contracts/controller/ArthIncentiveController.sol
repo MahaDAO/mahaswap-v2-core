@@ -6,6 +6,7 @@ import {Math} from '../libraries/Math.sol';
 import {Setters} from './Setters.sol';
 import {IIncentiveController} from '../interfaces/IIncentiveController.sol';
 import {Epoch} from '../Epoch.sol';
+import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 
 /**
  * NOTE: Contract ArthswapV1Pair should be the owner of this controller.
@@ -23,15 +24,20 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     ) public Epoch(60 * 60, block.timestamp, 0) {
         pairAddress = _pairAddress;
         protocolTokenAddress = _protocolTokenAddress;
-        incentiveToken = _incentiveToken;
+        incentiveToken = IBurnableERC20(_incentiveToken);
         isTokenAProtocolToken = _isTokenAProtocolToken;
         rewardPerHour = _rewardPerHour;
+
+        expectedVolumePerHour = 1000 * 1e18;
+        availableRewardThisHour = rewardPerHour;
     }
 
-    function updateForEpoch() private checkEpoch {
+    function updateForEpoch() private {
         expectedVolumePerHour = Math.max(currentVolumPerHour, 1);
         availableRewardThisHour = rewardPerHour;
         currentVolumPerHour = 0;
+
+        lastExecutedAt = block.timestamp;
     }
 
     function estimatePenaltyToCharge(
@@ -104,7 +110,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         uint256 amountInB,
         address from,
         address to
-    ) public onlyPair {
+    ) external onlyPair {
         if (isTokenAProtocolToken) {
             // then A is ARTH
             _conductChecks(reserveA, priceALast, amountOutA, amountInA, to);
@@ -123,7 +129,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     ) private {
         // capture volume and snapshot it every hour
         currentVolumPerHour = currentVolumPerHour.add(amountOutA).add(amountInA);
-        if (canUpdate()) updateForEpoch();
+        if (getCurrentEpoch() >= getNextEpoch()) updateForEpoch();
 
         // Check if we are selling and if we are blow the target price?
         if (amountInA > 0) {

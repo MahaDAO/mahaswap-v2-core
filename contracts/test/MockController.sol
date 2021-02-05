@@ -141,10 +141,12 @@ contract MockController is Epoch {
         expectedVolumePerHour = amount;
     }
 
-    function updateForEpoch() private checkEpoch {
+    function updateForEpoch() private {
         expectedVolumePerHour = currentVolumPerHour;
         availableRewardThisHour = rewardPerHour;
         currentVolumPerHour = 0;
+
+        lastExecutedAt = block.timestamp;
     }
 
     /**
