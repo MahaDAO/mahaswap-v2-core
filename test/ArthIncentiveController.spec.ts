@@ -90,6 +90,8 @@ describe('ArthIncentiveController', () => {
 
     swapTestCases.forEach((swapTestCase, i) => {
         it(`getInputPrice:${i}`, async () => {
+            const oldBalanceOfIncentiveToken = await incentiveToken.balanceOf(wallet.address);
+
             const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase
             await addLiquidity(token0Amount, token1Amount)
             await token0.transfer(pair.address, swapAmount)
@@ -97,6 +99,7 @@ describe('ArthIncentiveController', () => {
                 'UniswapV2: K'
             )
             await pair.swap(0, expectedOutputAmount, wallet.address, '0x', overrides)
+            expect(await incentiveToken.balanceOf(wallet.address)).to.lt(oldBalanceOfIncentiveToken);
         })
     })
 
@@ -108,6 +111,8 @@ describe('ArthIncentiveController', () => {
     ].map(a => a.map(n => (typeof n === 'string' ? bigNumberify(n) : expandTo18Decimals(n))))
     optimisticTestCases.forEach((optimisticTestCase, i) => {
         it(`optimistic:${i}`, async () => {
+            const oldBalanceOfIncentiveToken = await incentiveToken.balanceOf(wallet.address);
+
             const [outputAmount, token0Amount, token1Amount, inputAmount] = optimisticTestCase
             await addLiquidity(token0Amount, token1Amount)
             await token0.transfer(pair.address, inputAmount)
@@ -115,6 +120,7 @@ describe('ArthIncentiveController', () => {
                 'UniswapV2: K'
             )
             await pair.swap(outputAmount, 0, wallet.address, '0x', overrides)
+            expect(await incentiveToken.balanceOf(wallet.address)).to.gt(oldBalanceOfIncentiveToken);
         })
     })
 
@@ -168,7 +174,7 @@ describe('ArthIncentiveController', () => {
     })
 
     const swapToken1TestCases: BigNumber[][] = [
-        ['997000000000000000', 5, 10, 1], // given amountIn, amountOut = floor(amountIn * .997)
+        ['453305446940074565', 5, 10, 1], // given amountIn, amountOut = floor(amountIn * .997)
         ['997000000000000000', 10, 5, 1],
         ['997000000000000000', 5, 5, 1],
         [1, 5, 5, '1003009027081243732'] // given amountOut, amountIn = ceiling(amountOut / .997)
@@ -186,6 +192,8 @@ describe('ArthIncentiveController', () => {
             // const swapAmount = expandTo18Decimals(1)
             // const expectedOutputAmount = bigNumberify('453305446940074565')
             await token1.transfer(pair.address, swapAmount)
+            // await token0.transfer(pair.address, swapAmount)
+
             await expect(pair.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides))
                 .to.emit(token0, 'Transfer')
                 .withArgs(pair.address, wallet.address, expectedOutputAmount)
