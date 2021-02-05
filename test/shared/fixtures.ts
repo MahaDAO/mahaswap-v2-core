@@ -8,6 +8,7 @@ import ERC20 from '../../build/ERC20.json'
 import UniswapV2Factory from '../../build/ArthswapV1Factory.json'
 import UniswapV2Pair from '../../build/ArthswapV1Pair.json'
 import ArthIncentiveController from '../../build/ArthIncentiveController.json'
+import MockBurnableERC20 from '../../build/MockBurnableERC20.json'
 
 
 interface FactoryFixture {
@@ -60,22 +61,26 @@ export async function controllerFixture(provider: Web3Provider, [wallet]: Wallet
   const tokenA = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
   const tokenB = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
 
-  const protocolToken = await deployContract(wallet, ERC20, [expandTo18Decimals(10000)], overrides)
-
   await factory.createPair(tokenA.address, tokenB.address, overrides)
   const pairAddress = await factory.getPair(tokenA.address, tokenB.address)
   const pair = new Contract(pairAddress, JSON.stringify(UniswapV2Pair.abi), provider).connect(wallet)
 
+  const incentiveToken = await deployContract(wallet, MockBurnableERC20, [expandTo18Decimals(10000)], overrides)
+
   const controller = await deployContract(
     wallet,
     ArthIncentiveController,
-    [pairAddress, protocolToken.address, Math.floor(Date.now() / 1000)],
+    [pairAddress, tokenA.address, Math.floor(Date.now() / 1000)],
     overrides
   )
+
+  await controller.setIncentiveToken(incentiveToken.address)
 
   const token0Address = (await pair.token0()).address
   const token0 = tokenA.address === token0Address ? tokenA : tokenB
   const token1 = tokenA.address === token0Address ? tokenB : tokenA
+
+  await factory.setIncentiveControllerForPair(token0.address, token1.address, controller.address);
 
   return { factory, token0, token1, pair, controller }
 }
