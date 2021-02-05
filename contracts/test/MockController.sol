@@ -169,7 +169,7 @@ contract MockController is Epoch {
     function _incentiviseTrade(uint256 buyVolume, address to) private {
         // Calculate the amount as per volumne and rate.
         // Cap the amount to a maximum rewardPerHour if amount > maxRewardPerHour.
-        uint256 amountToReward = Math.min(estimateRewardToGive(buyVolume), availableRewardThisHour);
+        uint256 amountToReward = estimateRewardToGive(buyVolume);
 
         if (amountToReward > 0) {
             availableRewardThisHour = availableRewardThisHour.sub(amountToReward);
