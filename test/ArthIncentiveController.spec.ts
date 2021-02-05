@@ -137,7 +137,7 @@ describe('ArthIncentiveControllerWithSwap', () => {
         [1, 1000, 1000, '996006981039903216']
     ].map(a => a.map(n => (typeof n === 'string' ? bigNumberify(n) : expandTo18Decimals(n))))
     swapToken0TestCases.forEach((swapTestCase, i) => {
-        it(`swap:token0:testcase${i}`, async () => {
+        it(`swap:token0:${i}`, async () => {
             const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase
 
             // const token0Amount = expandTo18Decimals(5)
@@ -186,7 +186,7 @@ describe('ArthIncentiveControllerWithSwap', () => {
         [1, 1000, 1000, '996006981039903216']// given amountOut, amountIn = ceiling(amountOut / .997)
     ].map(a => a.map(n => (typeof n === 'string' ? bigNumberify(n) : expandTo18Decimals(n))))
     swapToken1TestCases.forEach((swapTestCase, i) => {
-        it(`swap:token1:testcase${i}`, async () => {
+        it(`swap:token1:${i}`, async () => {
             const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase
 
             await addLiquidity(token0Amount, token1Amount)
