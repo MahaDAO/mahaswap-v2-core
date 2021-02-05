@@ -81,7 +81,7 @@ export async function getApprovalDigest(
 
 export async function mineBlock(provider: Web3Provider, timestamp: number): Promise<void> {
   await new Promise(async (resolve, reject) => {
-    ;(provider._web3Provider.sendAsync as any)(
+    ; (provider._web3Provider.sendAsync as any)(
       { jsonrpc: '2.0', method: 'evm_mine', params: [timestamp] },
       (error: any, result: any): void => {
         if (error) {
@@ -93,6 +93,7 @@ export async function mineBlock(provider: Web3Provider, timestamp: number): Prom
     )
   })
 }
+
 
 export function encodePrice(reserve0: BigNumber, reserve1: BigNumber) {
   return [reserve1.mul(bigNumberify(2).pow(112)).div(reserve0), reserve0.mul(bigNumberify(2).pow(112)).div(reserve1)]
