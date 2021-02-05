@@ -4,7 +4,7 @@ pragma solidity =0.5.16;
 
 import '../interfaces/IIncentiveController.sol';
 
-contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
+contract MockPairForController {
     // calls our special reward controller
     function conductChecks(
         address controller,
