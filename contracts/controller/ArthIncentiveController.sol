@@ -147,7 +147,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         }
 
         // Check if we are buying and below the target price
-        if (amountOutA > 0 && priceA < getRewardIncentivePrice()) {
+        if (amountOutA > 0 && priceA < getRewardIncentivePrice() && availableRewardThisHour > 0) {
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
             _incentiviseTrade(amountOutA, to);
