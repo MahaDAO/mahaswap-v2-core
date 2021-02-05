@@ -14,7 +14,7 @@ contract Setters is Getters {
      */
     function setIncentiveToken(address newToken) public onlyOwner {
         require(newToken != address(0), 'Pair: invalid token');
-        token = IBurnableERC20(newToken);
+        incentiveToken = IBurnableERC20(newToken);
     }
 
     function setPenaltyPrice(uint256 newPenaltyPrice) public onlyOwner {

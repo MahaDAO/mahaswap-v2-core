@@ -17,17 +17,19 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     constructor(
         address _pairAddress,
         address _protocolTokenAddress,
+        address _incentiveToken,
         bool _isTokenAProtocolToken,
-        uint256 rewardPerHour
+        uint256 _rewardPerHour
     ) public Epoch(60 * 60, block.timestamp, 0) {
         pairAddress = _pairAddress;
         protocolTokenAddress = _protocolTokenAddress;
+        incentiveToken = _incentiveToken;
         isTokenAProtocolToken = _isTokenAProtocolToken;
-        rewardPerHour = rewardPerHour;
+        rewardPerHour = _rewardPerHour;
     }
 
     function updateForEpoch() private checkEpoch {
-        expectedVolumePerHour = currentVolumPerHour;
+        expectedVolumePerHour = Math.max(currentVolumPerHour, 1);
         availableRewardThisHour = rewardPerHour;
         currentVolumPerHour = 0;
     }
@@ -69,20 +71,19 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         if (amountToBurn > 0) {
             // NOTE: amount has to be approved from frontend.
             // Burn and charge penalty.
-            token.burnFrom(to, amountToBurn);
+            incentiveToken.burnFrom(to, amountToBurn);
         }
     }
 
     function _incentiviseTrade(uint256 buyVolume, address to) private {
         // Calculate the amount as per volumne and rate.
-        // Cap the amount to a maximum rewardPerHour if amount > maxRewardPerHour.
-        uint256 amountToReward = Math.min(estimateRewardToGive(buyVolume), availableRewardThisHour);
+        uint256 amountToReward = estimateRewardToGive(buyVolume);
 
         if (amountToReward > 0) {
             availableRewardThisHour = availableRewardThisHour.sub(amountToReward);
 
             // Send reward to the appropriate address.
-            token.transfer(to, amountToReward);
+            incentiveToken.transfer(to, amountToReward);
         }
     }
 

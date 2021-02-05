@@ -52,21 +52,11 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
         feeToSetter = _feeToSetter;
     }
 
-    function setIncentiveControllerForPair(
-        address token0,
-        address token1,
-        address controller
-    ) public onlyOwner {
-        address pair = getPair[token0][token1];
+    function setIncentiveControllerForPair(address pair, address controller) public onlyOwner {
         IArthswapV1Pair(pair).setIncentiveController(controller);
     }
 
-    function setSwapingPausedForPair(
-        address token0,
-        address token1,
-        bool isSet
-    ) public onlyOwner {
-        address pair = getPair[token0][token1];
+    function setSwapingPausedForPair(address pair, bool isSet) public onlyOwner {
         IArthswapV1Pair(pair).setSwapingPaused(isSet);
     }
 }

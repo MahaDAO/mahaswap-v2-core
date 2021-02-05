@@ -16,7 +16,7 @@ contract State is Ownable {
     using UQ112x112 for uint224;
 
     // Token which will be used to charge penalty or reward incentives.
-    IBurnableERC20 public token;
+    IBurnableERC20 public incentiveToken;
 
     // Pair that will be using this contract.
     address public pairAddress;
@@ -41,7 +41,7 @@ contract State is Ownable {
     uint256 public rewardPerHour = 0;
 
     uint256 public availableRewardThisHour = 0;
-    uint256 public expectedVolumePerHour = 0;
+    uint256 public expectedVolumePerHour = 1;
     uint256 public currentVolumPerHour = 0;
 
     /**

@@ -23,15 +23,7 @@ interface IArthswapV1Factory {
 
     function setFeeToSetter(address) external;
 
-    function setIncentiveControllerForPair(
-        address token0,
-        address token1,
-        address controller
-    ) external;
+    function setIncentiveControllerForPair(address pair, address controller) external;
 
-    function setSwapingPausedForPair(
-        address token0,
-        address token1,
-        bool isSet
-    ) external;
+    function setSwapingPausedForPair(address pair, bool isSet) external;
 }
