@@ -129,7 +129,8 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         uint256 deviationFromTarget = targetPrice.sub(price).mul(1e18).div(targetPrice);
 
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
-        return sellVolume.mul(deviationFromTarget).mul(percentOfPool).mul(100).div(uint256(1e18).mul(1e18));
+        // NOTE: multiplication by 100, is removed in the mock controller
+        return sellVolume.mul(deviationFromTarget).mul(percentOfPool).div(uint256(1e18).mul(1e18));
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
