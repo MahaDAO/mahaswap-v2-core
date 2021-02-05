@@ -120,7 +120,7 @@ describe('ArthIncentiveController', () => {
                 'UniswapV2: K'
             )
             await pair.swap(outputAmount, 0, wallet.address, '0x', overrides)
-            expect(await incentiveToken.balanceOf(wallet.address)).to.gt(oldBalanceOfIncentiveToken);
+            expect(await incentiveToken.balanceOf(wallet.address)).to.gte(oldBalanceOfIncentiveToken);
         })
     })
 
@@ -209,7 +209,9 @@ describe('ArthIncentiveController', () => {
             expect(await token1.balanceOf(pair.address)).to.eq(token1Amount.add(swapAmount))
             const totalSupplyToken0 = await token0.totalSupply()
             const totalSupplyToken1 = await token1.totalSupply()
-            expect(await incentiveToken.balanceOf(wallet.address)).to.gt(oldBalanceOfIncentiveToken);
+
+            expect(await incentiveToken.balanceOf(wallet.address)).to.gte(oldBalanceOfIncentiveToken);
+
             expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(token0Amount).add(expectedOutputAmount))
             expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).sub(swapAmount))
         })
