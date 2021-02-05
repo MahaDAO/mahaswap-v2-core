@@ -152,6 +152,10 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         rewardPrice = newRewardPrice;
     }
 
+    function setTokenAProtocolToken(bool val) public onlyOwner {
+        isTokenAProtocolToken = val;
+    }
+
     function setMahaPerHour(uint256 _rewardPerHour) public onlyOwner {
         rewardPerHour = _rewardPerHour;
     }
