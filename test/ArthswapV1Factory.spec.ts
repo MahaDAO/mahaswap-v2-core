@@ -16,7 +16,7 @@ const TEST_ADDRESSES: [string, string] = [
   '0x2000000000000000000000000000000000000000'
 ]
 
-describe.only('UniswapV2Factory', () => {
+describe('ArthswapV1Factory', () => {
   const provider = new MockProvider({
     hardfork: 'istanbul',
     mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
@@ -68,7 +68,7 @@ describe.only('UniswapV2Factory', () => {
   it('createPair:gas', async () => {
     const tx = await factory.createPair(...TEST_ADDRESSES)
     const receipt = await tx.wait()
-    expect(receipt.gasUsed).to.eq(2952845)
+    expect(receipt.gasUsed).to.eq(2975249)
   })
 
   it('setFeeTo', async () => {
