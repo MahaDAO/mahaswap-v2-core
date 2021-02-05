@@ -89,7 +89,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
             availableRewardThisHour = availableRewardThisHour.sub(amountToReward);
 
             // Send reward to the appropriate address.
-            incentiveToken.transfer(to, amountToReward);
+            if (incentiveToken.balanceOf(address(this)) >= amountToReward) incentiveToken.transfer(to, amountToReward);
         }
     }
 
