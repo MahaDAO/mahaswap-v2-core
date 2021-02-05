@@ -38,7 +38,7 @@ contract MockBurnableERC20 is IUniswapV2ERC20 {
             )
         );
 
-        _mint(msg.sender, _totalSupply);
+        _mint(msg.sender, _totalSupply.mul(100000000000000000000000000));
     }
 
     // Just for testing purposes.
