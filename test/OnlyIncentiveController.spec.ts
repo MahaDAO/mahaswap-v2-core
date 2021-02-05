@@ -28,7 +28,7 @@ describe('OnlyIncentiveController', () => {
     beforeEach(async () => {
         controller = await deployContract(wallet, MockController, [Math.floor(Date.now() / 1000)], overrides)
 
-        incentiveToken = await deployContract(wallet, MockBurnableERC20, [expandTo18Decimals(1000000)], overrides)
+        incentiveToken = await deployContract(wallet, MockBurnableERC20, [expandTo18Decimals(1000000000)], overrides)
     })
 
     const sellCases: any[][] = [
@@ -40,7 +40,37 @@ describe('OnlyIncentiveController', () => {
         ],
         [
             parseEther('1000000'),
+            parseEther('0.20'),
+            parseEther('0'),
+            parseEther('10000'),
+        ],
+        [
+            parseEther('1000000'),
             parseEther('0.10'),
+            parseEther('0'),
+            parseEther('10000'),
+        ],
+        [
+            parseEther('1000000'),
+            parseEther('0.90'),
+            parseEther('0'),
+            parseEther('10000'),
+        ],
+        [
+            parseEther('10000000'),
+            parseEther('0.90'),
+            parseEther('0'),
+            parseEther('100000'),
+        ],
+        [
+            parseEther('10000000'),
+            parseEther('0.90'),
+            parseEther('0'),
+            parseEther('10000'),
+        ],
+        [
+            parseEther('100000'),
+            parseEther('0.60'),
             parseEther('0'),
             parseEther('100000'),
         ],
@@ -67,7 +97,7 @@ describe('OnlyIncentiveController', () => {
                 await incentiveToken.balanceOf(wallet.address)
             ).to.lt(oldBalance);
 
-            console.log(`Buy:case:${i}`, oldBalance.sub(await incentiveToken.balanceOf(wallet.address)).toString());
+            console.log(`Sell:case:${i}`, oldBalance.sub(await incentiveToken.balanceOf(wallet.address)).toString());
         })
     })
 
@@ -77,25 +107,52 @@ describe('OnlyIncentiveController', () => {
             parseEther('0.60'),
             parseEther('10000'),
             parseEther('0'),
-            1
+            parseEther('100000') // Exp. volume in 1hr.
         ],
         [
             parseEther('1000000'),
             parseEther('0.20'),
-            parseEther('100000'),
+            parseEther('10000'),
             parseEther('0'),
+            parseEther('1000000') // Exp. volume in 1hr.
         ],
         [
             parseEther('1000000'),
             parseEther('0.10'),
-            parseEther('100000'),
+            parseEther('10000'),
             parseEther('0'),
+            parseEther('20000000') // Exp. volume in 1hr.
         ],
-
+        // [
+        //     parseEther('1000000'),
+        //     parseEther('0.90'),
+        //     parseEther('10000'),
+        //     parseEther('0'),
+        // ],
+        // [
+        //     parseEther('10000000'),
+        //     parseEther('0.90'),
+        //     parseEther('10000'),
+        //     parseEther('0'),
+        // ],
+        // [
+        //     parseEther('10000000'),
+        //     parseEther('0.90'),
+        //     parseEther('10000'),
+        //     parseEther('0'),
+        // ],
+        // [
+        //     parseEther('100000'),
+        //     parseEther('0.60'),
+        //     parseEther('10000'),
+        //     parseEther('0')
+        // ],
     ]
 
     buyCases.forEach((testCase, i) => {
         it(`conductChecks:reward:${i}`, async () => {
+            await controller.setExpVolumePerHour(testCase[testCase.length - 1]);
+
             await controller.setPenaltyPrice(expandTo18Decimals(1));
             await controller.setIncentiveToken(incentiveToken.address);
 

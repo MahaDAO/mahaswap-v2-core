@@ -137,6 +137,10 @@ contract MockController is Epoch {
         useOracle = isSet;
     }
 
+    function setExpVolumePerHour(uint256 amount) public {
+        expectedVolumePerHour = amount;
+    }
+
     function updateForEpoch() private checkEpoch {
         expectedVolumePerHour = currentVolumPerHour;
         availableRewardThisHour = rewardPerHour;
