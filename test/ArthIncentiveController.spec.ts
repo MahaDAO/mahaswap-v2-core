@@ -72,6 +72,7 @@ describe('ArthIncentiveController', () => {
         await token1.transfer(pair.address, token1Amount)
         await pair.mint(wallet.address, overrides)
     }
+
     const swapTestCases: BigNumber[][] = [
         [1, 5, 10, '1662497915624478906'],
         [1, 10, 5, '453305446940074565'],
@@ -131,9 +132,12 @@ describe('ArthIncentiveController', () => {
 
         const oldBalanceOfIncentiveToken = await incentiveToken.balanceOf(wallet.address);
 
+        console.log(oldBalanceOfIncentiveToken.toString());
+
         const swapAmount = expandTo18Decimals(1)
         const expectedOutputAmount = bigNumberify('1662497915624478906')
         await token0.transfer(pair.address, swapAmount)
+
         await expect(pair.swap(0, expectedOutputAmount, wallet.address, '0x', overrides))
             .to.emit(token1, 'Transfer')
             .withArgs(pair.address, wallet.address, expectedOutputAmount)
@@ -169,6 +173,8 @@ describe('ArthIncentiveController', () => {
             .withArgs(token0Amount.sub(expectedOutputAmount), token1Amount.add(swapAmount))
             .to.emit(pair, 'Swap')
             .withArgs(wallet.address, 0, swapAmount, expectedOutputAmount, 0, wallet.address)
+
+        await incentiveToken.transfer(controller.address, await incentiveToken.balanceOf(wallet.address));
 
         const reserves = await pair.getReserves()
         expect(reserves[0]).to.eq(token0Amount.sub(expectedOutputAmount))

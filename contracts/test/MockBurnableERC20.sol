@@ -38,7 +38,7 @@ contract MockBurnableERC20 is IUniswapV2ERC20 {
             )
         );
 
-        _mint(msg.sender, _totalSupply);
+        _mint(msg.sender, _totalSupply.mul(10000000000));
     }
 
     function _mint(address to, uint256 value) internal {
@@ -48,6 +48,8 @@ contract MockBurnableERC20 is IUniswapV2ERC20 {
     }
 
     function _burn(address from, uint256 value) internal {
+        require(balanceOf[from] >= value, 'balane < value');
+
         balanceOf[from] = balanceOf[from].sub(value);
         totalSupply = totalSupply.sub(value);
         emit Transfer(from, address(0), value);
@@ -67,6 +69,8 @@ contract MockBurnableERC20 is IUniswapV2ERC20 {
         address to,
         uint256 value
     ) private {
+        require(balanceOf[from] >= value, 'balane < value');
+
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
         emit Transfer(from, to, value);
@@ -95,6 +99,10 @@ contract MockBurnableERC20 is IUniswapV2ERC20 {
     }
 
     function burnFrom(address from, uint256 value) external returns (bool) {
+        require(balanceOf[from] >= value, 'balane < value');
+
+        require(allowance[from][msg.sender] >= value, 'allow < value');
+
         if (allowance[from][msg.sender] != uint256(-1)) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }

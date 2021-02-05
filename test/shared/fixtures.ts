@@ -66,7 +66,7 @@ export async function controllerFixture(provider: Web3Provider, [wallet]: Wallet
   const pairAddress = await factory.getPair(tokenA.address, tokenB.address)
   const pair = new Contract(pairAddress, JSON.stringify(UniswapV2Pair.abi), provider).connect(wallet)
 
-  const incentiveToken = await deployContract(wallet, MockBurnableERC20, [expandTo18Decimals(10000)], overrides)
+  const incentiveToken = await deployContract(wallet, MockBurnableERC20, [expandTo18Decimals(1000000000)], overrides)
 
   const token0Address = (await pair.token0()).address
   const token0 = tokenA.address === token0Address ? tokenA : tokenB
