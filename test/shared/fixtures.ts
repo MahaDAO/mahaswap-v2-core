@@ -52,6 +52,7 @@ interface ControllerFixture extends FactoryFixture {
   token0: Contract
   token1: Contract
   pair: Contract
+  incentiveToken: Contract
   controller: Contract
 }
 
@@ -70,7 +71,7 @@ export async function controllerFixture(provider: Web3Provider, [wallet]: Wallet
   const controller = await deployContract(
     wallet,
     ArthIncentiveController,
-    [pairAddress, tokenA.address, Math.floor(Date.now() / 1000)],
+    [pairAddress, tokenA.address, Math.floor(Date.now() / 2000)],
     overrides
   )
 
@@ -82,5 +83,5 @@ export async function controllerFixture(provider: Web3Provider, [wallet]: Wallet
 
   await factory.setIncentiveControllerForPair(token0.address, token1.address, controller.address);
 
-  return { factory, token0, token1, pair, controller }
+  return { factory, token0, token1, pair, controller, incentiveToken }
 }
