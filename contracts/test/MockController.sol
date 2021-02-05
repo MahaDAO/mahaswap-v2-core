@@ -2,20 +2,16 @@
 
 pragma solidity =0.5.16;
 
-import './libraries/SafeMath.sol';
-import './libraries/Ownable.sol';
-import './libraries/UQ112x112.sol';
-import './interfaces/IBurnableERC20.sol';
-import './interfaces/ISimpleOracle.sol';
-import './interfaces/IUniswapOracle.sol';
-import './interfaces/IArthswapV1Factory.sol';
-import './interfaces/IIncentiveController.sol';
-import './Epoch.sol';
+import '../Epoch.sol';
+import '../libraries/SafeMath.sol';
+import '../libraries/UQ112x112.sol';
+import '../interfaces/IUniswapOracle.sol';
+import '../interfaces/IBurnableERC20.sol';
 
 /**
  * NOTE: Contract ArthswapV1Pair should be the owner of this controller.
  */
-contract ArthIncentiveController is IIncentiveController, Epoch {
+contract MockController is Epoch {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
@@ -25,12 +21,6 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
 
     // Token which will be used to charge penalty or reward incentives.
     IBurnableERC20 public token;
-
-    // Pair that will be using this contract.
-    address public pairAddress;
-
-    // Token which is the main token of a protocol.
-    address public protocolTokenAddress;
 
     // Used to track the latest twap price.
     IUniswapOracle public uniswapOracle;
@@ -43,8 +33,6 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
     // Should we use oracle to get diff. price feeds or not.
     bool public useOracle = false;
 
-    bool public isTokenAProtocolToken = true;
-
     // Max. reward per hour to be given out.
     uint256 public rewardPerHour = 13 * 1e18;
 
@@ -53,24 +41,9 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
     uint256 public currentVolumPerHour = 0;
 
     /**
-     * Modifier.
-     */
-    modifier onlyPair {
-        require(msg.sender == pairAddress, 'Controller: Forbidden');
-        _;
-    }
-
-    /**
      * Constructor.
      */
-    constructor(
-        address _pairAddress,
-        address _protocolTokenAddress,
-        uint256 startTime
-    ) public Epoch(60 * 60, startTime, 0) {
-        pairAddress = _pairAddress;
-        protocolTokenAddress = _protocolTokenAddress;
-    }
+    constructor(uint256 startTime) public Epoch(60 * 60, startTime, 0) {}
 
     /**
      * Getters.
@@ -129,7 +102,6 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
         uint256 deviationFromTarget = targetPrice.sub(price).mul(1e18).div(targetPrice);
 
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
-        // NOTE: multiplication by 100, is removed in the mock controller
         return sellVolume.mul(deviationFromTarget).mul(percentOfPool).div(uint256(1e18).mul(1e18));
     }
 
@@ -140,29 +112,33 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
     /**
      * Setters.
      */
-    function setIncentiveToken(address newToken) public onlyOwner {
+    function setIncentiveToken(address newToken) public {
         require(newToken != address(0), 'Pair: invalid token');
         token = IBurnableERC20(newToken);
     }
 
-    function setPenaltyPrice(uint256 newPenaltyPrice) public onlyOwner {
+    function setPenaltyPrice(uint256 newPenaltyPrice) public {
         penaltyPrice = newPenaltyPrice;
     }
 
-    function setRewardPrice(uint256 newRewardPrice) public onlyOwner {
+    function setRewardPrice(uint256 newRewardPrice) public {
         rewardPrice = newRewardPrice;
     }
 
-    function setMahaPerHour(uint256 _rewardPerHour) public onlyOwner {
+    function setMahaPerHour(uint256 _rewardPerHour) public {
         rewardPerHour = _rewardPerHour;
     }
 
-    function setUniswapOracle(address newUniswapOracle) public onlyOwner {
+    function setUniswapOracle(address newUniswapOracle) public {
         uniswapOracle = IUniswapOracle(newUniswapOracle);
     }
 
-    function setUseOracle(bool isSet) public onlyOwner {
+    function setUseOracle(bool isSet) public {
         useOracle = isSet;
+    }
+
+    function setExpVolumePerHour(uint256 amount) public {
+        expectedVolumePerHour = amount;
     }
 
     function updateForEpoch() private checkEpoch {
@@ -193,12 +169,12 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
     function _incentiviseTrade(uint256 buyVolume, address to) private {
         // Calculate the amount as per volumne and rate.
         // Cap the amount to a maximum rewardPerHour if amount > maxRewardPerHour.
-        uint256 amountToReward = Math.min(estimateRewardToGive(buyVolume), availableRewardThisHour);
+        uint256 amountToReward = estimateRewardToGive(buyVolume);
 
         if (amountToReward > 0) {
             availableRewardThisHour = availableRewardThisHour.sub(amountToReward);
 
-            // Send reward to the appropriate address.
+            // // Send reward to the appropriate address.
             token.transfer(to, amountToReward);
         }
     }
@@ -211,23 +187,12 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
      */
     function conductChecks(
         uint112 reserveA,
-        uint112 reserveB,
         uint256 priceALast,
-        uint256 priceBLast,
         uint256 amountOutA,
-        uint256 amountOutB,
         uint256 amountInA,
-        uint256 amountInB,
-        address from,
         address to
-    ) public onlyPair {
-        if (isTokenAProtocolToken) {
-            // then A is ARTH
-            _conductChecks(reserveA, priceALast, amountOutA, amountInA, to);
-        } else {
-            // then B is ARTH
-            _conductChecks(reserveB, priceBLast, amountOutB, amountInB, to);
-        }
+    ) public {
+        _conductChecks(reserveA, priceALast, amountOutA, amountInA, to);
     }
 
     function _conductChecks(
@@ -251,7 +216,6 @@ contract ArthIncentiveController is IIncentiveController, Epoch {
                 // Calculate the amount of tokens sent.
                 _penalizeTrade(priceA, penaltyTargetPrice, amountInA, reserveA, to);
 
-                // stop here to save gas
                 return;
             }
         }
