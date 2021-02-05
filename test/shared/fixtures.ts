@@ -68,18 +68,18 @@ export async function controllerFixture(provider: Web3Provider, [wallet]: Wallet
 
   const incentiveToken = await deployContract(wallet, MockBurnableERC20, [expandTo18Decimals(10000)], overrides)
 
+  const token0Address = (await pair.token0()).address
+  const token0 = tokenA.address === token0Address ? tokenA : tokenB
+  const token1 = tokenA.address === token0Address ? tokenB : tokenA
+
   const controller = await deployContract(
     wallet,
     ArthIncentiveController,
-    [pairAddress, tokenA.address, Math.floor(Date.now() / 2000)],
+    [pairAddress, token0.address, Math.floor(Date.now() / 2000)],
     overrides
   )
 
   await controller.setIncentiveToken(incentiveToken.address)
-
-  const token0Address = (await pair.token0()).address
-  const token0 = tokenA.address === token0Address ? tokenA : tokenB
-  const token1 = tokenA.address === token0Address ? tokenB : tokenA
 
   await factory.setIncentiveControllerForPair(token0.address, token1.address, controller.address);
 
