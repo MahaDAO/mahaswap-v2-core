@@ -225,5 +225,7 @@ contract MockController is Epoch {
             // If we are buying the main protocol token, then we incentivize the tx sender.
             return _incentiviseTrade(amountOutA, to);
         }
+
+        return 1;
     }
 }
