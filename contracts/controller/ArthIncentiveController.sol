@@ -5,6 +5,7 @@ pragma solidity =0.5.16;
 import {Math} from '../libraries/Math.sol';
 import {Setters} from './Setters.sol';
 import {IIncentiveController} from '../interfaces/IIncentiveController.sol';
+import {IArthswapV1Pair} from '../interfaces/IArthswapV1Pair.sol';
 import {Epoch} from '../Epoch.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 
@@ -12,6 +13,8 @@ import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
  * NOTE: Contract ArthswapV1Pair should be the owner of this controller.
  */
 contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
+    uint256 public arthToMahaRate;
+
     /**
      * Constructor.
      */
@@ -19,14 +22,15 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         address _pairAddress,
         address _protocolTokenAddress,
         address _incentiveToken,
-        bool _isTokenAProtocolToken,
-        uint256 _rewardPerHour
+        uint256 _rewardPerHour,
+        uint256 _arthToMahaRate
     ) public Epoch(60 * 60, block.timestamp, 0) {
         pairAddress = _pairAddress;
         protocolTokenAddress = _protocolTokenAddress;
         incentiveToken = IBurnableERC20(_incentiveToken);
-        isTokenAProtocolToken = _isTokenAProtocolToken;
+        isTokenAProtocolToken = IArthswapV1Pair(_pairAddress).token0() == _protocolTokenAddress;
         rewardPerHour = _rewardPerHour;
+        arthToMahaRate = _arthToMahaRate;
 
         expectedVolumePerHour = 1000 * 1e18;
         availableRewardThisHour = rewardPerHour;
@@ -42,20 +46,23 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
 
     function estimatePenaltyToCharge(
         uint256 price,
-        uint256 targetPrice,
         uint256 liquidity,
         uint256 sellVolume
-    ) public pure returns (uint256) {
+    ) public view returns (uint256) {
+        uint256 targetPrice = getPenaltyPrice();
+
         // % of pool = sellVolume / liquidity
         // % of deviation from target price = (tgt_price - price) / price
         // amountToburn = sellVolume * % of deviation from target price * % of pool * 100
+        if (price >= targetPrice) return 0;
 
-        uint256 percentOfPool = sellVolume.mul(1e18).div(liquidity);
-        uint256 deviationFromTarget = targetPrice.sub(price).mul(1e18).div(targetPrice);
+        uint256 percentOfPool = sellVolume.mul(10000).div(liquidity);
+        uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
+        uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget); // a number from 0-100%
 
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
         // NOTE: multiplication by 100, is removed in the mock controller
-        return sellVolume.mul(deviationFromTarget).mul(percentOfPool).div(uint256(1e18).mul(1e18));
+        return sellVolume.mul(feeToCharge).div(10000).mul(arthToMahaRate).div(1e18);
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
@@ -65,14 +72,17 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     /**
      * Mutations.
      */
+    function setArthToMahaRate(uint256 rate) external onlyOwner {
+        arthToMahaRate = rate;
+    }
+
     function _penalizeTrade(
         uint256 price,
-        uint256 targetPrice,
         uint256 sellVolume,
         uint256 liquidity,
         address to
     ) private {
-        uint256 amountToBurn = estimatePenaltyToCharge(price, targetPrice, liquidity, sellVolume);
+        uint256 amountToBurn = estimatePenaltyToCharge(price, liquidity, sellVolume);
 
         if (amountToBurn > 0) {
             // NOTE: amount has to be approved from frontend.
@@ -113,10 +123,12 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     ) external onlyPair {
         if (isTokenAProtocolToken) {
             // then A is ARTH
-            _conductChecks(reserveA, priceALast, amountOutA, amountInA, to);
+            uint256 price = uint256(reserveA).mul(1e18).div(uint256(reserveB));
+            _conductChecks(reserveB, price, amountOutB, amountInB, to);
         } else {
             // then B is ARTH
-            _conductChecks(reserveB, priceBLast, amountOutB, amountInB, to);
+            uint256 price = uint256(reserveB).mul(1e18).div(uint256(reserveA));
+            _conductChecks(reserveA, price, amountOutA, amountInA, to);
         }
     }
 
@@ -139,7 +151,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
             if (priceA < penaltyTargetPrice) {
                 // is the user expecting some DAI? if so then this is a sell order
                 // Calculate the amount of tokens sent.
-                _penalizeTrade(priceA, penaltyTargetPrice, amountInA, reserveA, to);
+                _penalizeTrade(priceA, amountInA, reserveA, to);
 
                 // stop here to save gas
                 return;

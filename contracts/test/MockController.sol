@@ -90,13 +90,15 @@ contract MockController is Epoch {
 
     function estimatePenaltyToCharge(
         uint256 price,
-        uint256 targetPrice,
         uint256 liquidity,
         uint256 sellVolume
-    ) public pure returns (uint256) {
+    ) public view returns (uint256) {
         // % of pool = sellVolume / liquidity
         // % of deviation from target price = (tgt_price - price) / price
         // amountToburn = sellVolume * % of deviation from target price * % of pool * 100
+
+        uint256 targetPrice = getPenaltyPrice();
+        if (price > targetPrice) return 0;
 
         uint256 percentOfPool = sellVolume.mul(1e18).div(liquidity);
         uint256 deviationFromTarget = targetPrice.sub(price).mul(1e18).div(targetPrice);
@@ -154,12 +156,11 @@ contract MockController is Epoch {
      */
     function _penalizeTrade(
         uint256 price,
-        uint256 targetPrice,
         uint256 sellVolume,
         uint256 liquidity,
         address to
-    ) private {
-        uint256 amountToBurn = estimatePenaltyToCharge(price, targetPrice, liquidity, sellVolume);
+    ) private returns (uint256 amountToBurn) {
+        amountToBurn = estimatePenaltyToCharge(price, liquidity, sellVolume);
 
         if (amountToBurn > 0) {
             // NOTE: amount has to be approved from frontend.
@@ -208,18 +209,9 @@ contract MockController is Epoch {
         currentVolumPerHour = currentVolumPerHour.add(amountOutA).add(amountInA);
         if (canUpdate()) updateForEpoch();
 
-        // Check if we are selling and if we are blow the target price?
-        if (amountInA > 0) {
-            // Check if we are below the targetPrice.
-            uint256 penaltyTargetPrice = getPenaltyPrice();
-
-            if (priceA < penaltyTargetPrice) {
-                // is the user expecting some DAI? if so then this is a sell order
-                // Calculate the amount of tokens sent.
-                _penalizeTrade(priceA, penaltyTargetPrice, amountInA, reserveA, to);
-
-                return;
-            }
+        // Check if we are selling; then penalize the user
+        if (amountInA > 0 && _penalizeTrade(priceA, amountInA, reserveA, to) > 0) {
+            return;
         }
 
         // Check if we are buying and below the target price
@@ -227,6 +219,7 @@ contract MockController is Epoch {
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
             _incentiviseTrade(amountOutA, to);
+            return;
         }
     }
 }

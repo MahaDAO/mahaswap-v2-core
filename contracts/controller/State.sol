@@ -30,7 +30,7 @@ contract State is Ownable {
     // Default price of when reward is to be given.
     uint256 public rewardPrice = uint256(120).mul(1e16); // ~1.2$
     // Default price of when penalty is to be charged.
-    uint256 public penaltyPrice = uint256(95).mul(1e16); // ~0.95$
+    uint256 public penaltyPrice = uint256(120).mul(1e16); // ~0.95$
 
     // Should we use oracle to get diff. price feeds or not.
     bool public useOracle = false;
