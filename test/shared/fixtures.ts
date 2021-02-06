@@ -75,13 +75,11 @@ export async function controllerFixture(provider: Web3Provider, [wallet]: Wallet
   const controller = await deployContract(
     wallet,
     ArthIncentiveController,
-    [pairAddress, token0.address, Math.floor(Date.now() / 2000)],
+    [pairAddress, token0.address, incentiveToken.address, 1000],
     overrides
   )
 
-  await controller.setIncentiveToken(incentiveToken.address)
-
-  await factory.setIncentiveControllerForPair(token0.address, token1.address, controller.address);
+  await factory.setIncentiveControllerForPair(pairAddress, controller.address);
 
   return { factory, token0, token1, pair, controller, incentiveToken }
 }

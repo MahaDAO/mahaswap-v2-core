@@ -150,7 +150,7 @@ describe('ArthIncentiveControllerWithSwap', () => {
             // const targetPrice = await controller.getPenaltyPrice();
             // const price = await pair.price0Last();
 
-            // const amount0In = 
+            // const amount0In =
             // const swapAmount = expandTo18Decimals(1)
             // const expectedOutputAmount = bigNumberify('1662497915624478906')
             await token0.transfer(pair.address, swapAmount)
@@ -235,7 +235,7 @@ describe('ArthIncentiveControllerWithSwap', () => {
         await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
         const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides)
         const receipt = await tx.wait()
-        expect(receipt.gasUsed).to.eq(150891)
+        expect(receipt.gasUsed).to.eq(125658)
     })
 
     it('burn', async () => {
