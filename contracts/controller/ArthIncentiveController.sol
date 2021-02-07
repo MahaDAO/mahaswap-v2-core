@@ -140,8 +140,8 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         address to
     ) private {
         // capture volume and snapshot it every hour
-        currentVolumPerHour = currentVolumPerHour.add(amountOutA).add(amountInA);
         if (getCurrentEpoch() >= getNextEpoch()) updateForEpoch();
+        currentVolumPerHour = currentVolumPerHour.add(amountOutA).add(amountInA);
 
         // Check if we are selling and if we are blow the target price?
         if (amountInA > 0) {
