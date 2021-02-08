@@ -34,7 +34,8 @@ contract MockController is Epoch {
     bool public useOracle = false;
 
     // Max. reward per hour to be given out.
-    uint256 public rewardPerHour = uint256(6944).mul(1e15);
+    // as per the value in excel sheet.
+    uint256 public rewardPerHour = uint256(6944000000000000000);
 
     uint256 arthToMahaRate = 1 * 1e18;
 
@@ -112,8 +113,6 @@ contract MockController is Epoch {
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
-        require(buyVolume.mul(rewardPerHour).div(expectedVolumePerHour) < availableRewardThisHour, 'rever');
-
         return Math.min(buyVolume.mul(rewardPerHour).div(expectedVolumePerHour), availableRewardThisHour);
     }
 
@@ -152,6 +151,10 @@ contract MockController is Epoch {
 
     function setExpVolumePerHour(uint256 amount) public {
         expectedVolumePerHour = amount;
+
+        // just for testing thing, so that exp volume per hour is set as what we pass.
+        // else in the update function it will be resetted.
+        currentVolumPerHour = amount;
     }
 
     function updateForEpoch() private {
@@ -172,8 +175,6 @@ contract MockController is Epoch {
         address to
     ) private {
         uint256 amountToBurn = estimatePenaltyToCharge(price, liquidity, sellVolume);
-
-        require(amountToBurn > 0, 'aountis0');
 
         if (amountToBurn > 0) {
             // NOTE: amount has to be approved from frontend.
