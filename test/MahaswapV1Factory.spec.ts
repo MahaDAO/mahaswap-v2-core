@@ -74,7 +74,7 @@ describe('MahaswapV1Factory', () => {
   it('createPair:gas', async () => {
     const tx = await factory.createPair(...TEST_ADDRESSES)
     const receipt = await tx.wait()
-    expect(receipt.gasUsed).to.eq(2975294)
+    expect(receipt.gasUsed).to.eq(2976131)
   })
 
   it('setFeeTo', async () => {

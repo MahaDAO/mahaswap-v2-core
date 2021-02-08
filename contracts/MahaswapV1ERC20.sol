@@ -6,8 +6,8 @@ import './libraries/SafeMath.sol';
 contract MahaswapV1ERC20 is IUniswapV2ERC20 {
     using SafeMath for uint256;
 
-    string public constant name = 'MahaSwap V1';
-    string public constant symbol = 'MSWAP-V1';
+    string public constant name = 'MahaSwap LP V1';
+    string public constant symbol = 'MLP-V1';
     uint8 public constant decimals = 18;
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;

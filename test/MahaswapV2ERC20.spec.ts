@@ -33,8 +33,8 @@ describe('MahaswapV1ERC20', () => {
   it('name, symbol, decimals, totalSupply, balanceOf, DOMAIN_SEPARATOR, PERMIT_TYPEHASH', async () => {
     const name = await token.name()
 
-    expect(name).to.eq('MahaSwap V1')
-    expect(await token.symbol()).to.eq('MSWAP-V1')
+    expect(name).to.eq('MahaSwap LP V1')
+    expect(await token.symbol()).to.eq('MLP-V1')
     expect(await token.decimals()).to.eq(18)
     expect(await token.totalSupply()).to.eq(TOTAL_SUPPLY)
     expect(await token.balanceOf(wallet.address)).to.eq(TOTAL_SUPPLY)

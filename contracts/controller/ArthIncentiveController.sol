@@ -66,7 +66,11 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
-        return Math.min(buyVolume.mul(rewardPerEpoch).div(expectedVolumePerEpoch), availableRewardThisEpoch);
+        return
+            Math.min(
+                buyVolume.mul(rewardPerEpoch).div(expectedVolumePerEpoch),
+                Math.min(availableRewardThisEpoch, incentiveToken.balanceOf(address(this)))
+            );
     }
 
     /**
@@ -99,7 +103,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
             availableRewardThisEpoch = availableRewardThisEpoch.sub(amountToReward);
 
             // Send reward to the appropriate address.
-            if (incentiveToken.balanceOf(address(this)) >= amountToReward) incentiveToken.transfer(to, amountToReward);
+            incentiveToken.transfer(to, amountToReward);
         }
     }
 

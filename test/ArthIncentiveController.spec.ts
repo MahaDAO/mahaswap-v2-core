@@ -259,7 +259,7 @@ describe('ArthIncentiveController with test swapping', () => {
         const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides)
         const receipt = await tx.wait()
 
-        expect(receipt.gasUsed).to.eq(144871)
+        expect(receipt.gasUsed).to.eq(144848)
     })
 
     it('burn', async () => {

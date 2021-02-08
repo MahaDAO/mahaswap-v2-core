@@ -9,6 +9,7 @@ import './interfaces/IUniswapV2Factory.sol';
 contract MahaswapV1Factory is IMahaswapV1Factory, Ownable {
     address public feeTo;
     address public feeToSetter;
+    bool public allowPairCreation = true;
 
     mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
@@ -24,6 +25,7 @@ contract MahaswapV1Factory is IMahaswapV1Factory, Ownable {
     }
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
+        require(allowPairCreation, 'MahaswapV1Factory: pair creation disabled');
         require(tokenA != tokenB, 'UniswapV2: IDENTICAL_ADDRESSES');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), 'UniswapV2: ZERO_ADDRESS');
@@ -54,6 +56,10 @@ contract MahaswapV1Factory is IMahaswapV1Factory, Ownable {
 
     function setIncentiveControllerForPair(address pair, address controller) public onlyOwner {
         IMahaswapV1Pair(pair).setIncentiveController(controller);
+    }
+
+    function setPairCreation(bool flag) public onlyOwner {
+        allowPairCreation = flag;
     }
 
     function setSwapingPausedForPair(address pair, bool isSet) public onlyOwner {
