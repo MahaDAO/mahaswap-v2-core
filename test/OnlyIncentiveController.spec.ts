@@ -161,11 +161,30 @@ describe('OnlyIncentiveController', () => {
                 wallet.address
             )
 
+            const balanceAfter1Claim = await incentiveToken.balanceOf(wallet.address)
+
             expect(
-                await incentiveToken.balanceOf(wallet.address)
+                balanceAfter1Claim
             ).to.gt(oldBalance);
 
-            console.log(`Buy:case:${i}`, (await incentiveToken.balanceOf(wallet.address)).sub(oldBalance).toString());
+            console.log(
+                `Buy:case:${i}`, (await incentiveToken.balanceOf(wallet.address)).sub(oldBalance).toString()
+            );
+
+            // checking.
+            await controller.conductChecks(
+                testCase[0],
+                testCase[1],
+                testCase[2],
+                testCase[3],
+                wallet.address
+            )
+
+            if (i > 1) {
+                expect(
+                    await incentiveToken.balanceOf(wallet.address)
+                ).to.gt(balanceAfter1Claim);
+            }
         })
     })
 })

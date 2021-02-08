@@ -34,7 +34,7 @@ contract MockController is Epoch {
     bool public useOracle = false;
 
     // Max. reward per hour to be given out.
-    uint256 public rewardPerHour = 13 * 1e18;
+    uint256 public rewardPerHour = uint256(6944).mul(1e15);
 
     uint256 arthToMahaRate = 1 * 1e18;
 
@@ -112,6 +112,8 @@ contract MockController is Epoch {
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
+        require(buyVolume.mul(rewardPerHour).div(expectedVolumePerHour) < availableRewardThisHour, 'rever');
+
         return Math.min(buyVolume.mul(rewardPerHour).div(expectedVolumePerHour), availableRewardThisHour);
     }
 
