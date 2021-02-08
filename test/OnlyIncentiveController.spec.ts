@@ -78,6 +78,7 @@ describe('OnlyIncentiveController', () => {
 
     sellCases.forEach((testCase, i) => {
         it(`conductChecks:penalty:${i}`, async () => {
+            // setting variables for mock to run some simulations.
             await controller.setPenaltyPrice(expandTo18Decimals(1));
             await controller.setIncentiveToken(incentiveToken.address);
 
@@ -85,6 +86,7 @@ describe('OnlyIncentiveController', () => {
 
             await incentiveToken.approve(controller.address, oldBalance);
 
+            // checking
             await controller.conductChecks(
                 testCase[0],
                 testCase[1],
@@ -151,6 +153,7 @@ describe('OnlyIncentiveController', () => {
 
     buyCases.forEach((testCase, i) => {
         it(`conductChecks:reward:${i}`, async () => {
+            // setting the varibales for mock to run some simulations.
             await controller.setExpVolumePerHour(testCase[testCase.length - 1]);
 
             await controller.setPenaltyPrice(expandTo18Decimals(1));
@@ -161,6 +164,7 @@ describe('OnlyIncentiveController', () => {
 
             await incentiveToken.approve(controller.address, oldBalance);
 
+            // checking.
             await controller.conductChecks(
                 testCase[0],
                 testCase[1],

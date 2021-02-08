@@ -112,6 +112,8 @@ contract MockController is Epoch {
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
+        require(expectedVolumePerHour > 0, 'reverted');
+
         return Math.min(buyVolume.mul(rewardPerHour).div(expectedVolumePerHour), availableRewardThisHour);
     }
 
@@ -153,7 +155,7 @@ contract MockController is Epoch {
     }
 
     function updateForEpoch() private {
-        expectedVolumePerHour = currentVolumPerHour;
+        expectedVolumePerHour = Math.max(currentVolumPerHour, 1);
         availableRewardThisHour = rewardPerHour;
         currentVolumPerHour = 0;
 
