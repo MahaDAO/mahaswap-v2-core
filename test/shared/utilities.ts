@@ -10,13 +10,16 @@ import {
   solidityPack
 } from 'ethers/utils'
 
+
 const PERMIT_TYPEHASH = keccak256(
   toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)')
 )
 
+
 export function expandTo18Decimals(n: number): BigNumber {
   return bigNumberify(n).mul(bigNumberify(10).pow(18))
 }
+
 
 function getDomainSeparator(name: string, tokenAddress: string) {
   return keccak256(
@@ -33,6 +36,7 @@ function getDomainSeparator(name: string, tokenAddress: string) {
   )
 }
 
+
 export function getCreate2Address(
   factoryAddress: string,
   [tokenA, tokenB]: [string, string],
@@ -48,6 +52,7 @@ export function getCreate2Address(
   const sanitizedInputs = `0x${create2Inputs.map(i => i.slice(2)).join('')}`
   return getAddress(`0x${keccak256(sanitizedInputs).slice(-40)}`)
 }
+
 
 export async function getApprovalDigest(
   token: Contract,
@@ -78,6 +83,7 @@ export async function getApprovalDigest(
     )
   )
 }
+
 
 export async function mineBlock(provider: Web3Provider, timestamp: number): Promise<void> {
   await new Promise(async (resolve, reject) => {

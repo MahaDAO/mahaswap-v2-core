@@ -1,20 +1,23 @@
 import chai, { expect } from 'chai'
 import { Contract } from 'ethers'
-import { AddressZero } from 'ethers/constants'
 import { bigNumberify } from 'ethers/utils'
+import { AddressZero } from 'ethers/constants'
 import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 
-import { getCreate2Address } from './shared/utilities'
 import { factoryFixture } from './shared/fixtures'
-
+import { getCreate2Address } from './shared/utilities'
 import UniswapV2Pair from '../build/MahaswapV1Pair.json'
 
+
 chai.use(solidity)
+
 
 const TEST_ADDRESSES: [string, string] = [
   '0x1000000000000000000000000000000000000000',
   '0x2000000000000000000000000000000000000000'
 ]
+
+
 
 describe('MahaswapV1Factory', () => {
   const provider = new MockProvider({
@@ -22,6 +25,7 @@ describe('MahaswapV1Factory', () => {
     mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
     gasLimit: 9999999
   })
+
   const [wallet, other] = provider.getWallets()
   const loadFixture = createFixtureLoader(provider, [wallet, other])
 
@@ -40,6 +44,7 @@ describe('MahaswapV1Factory', () => {
   async function createPair(tokens: [string, string]) {
     const bytecode = `0x${UniswapV2Pair.evm.bytecode.object}`
     const create2Address = getCreate2Address(factory.address, tokens, bytecode)
+
     await expect(factory.createPair(...tokens))
       .to.emit(factory, 'PairCreated')
       .withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], create2Address, bigNumberify(1))
@@ -52,6 +57,7 @@ describe('MahaswapV1Factory', () => {
     expect(await factory.allPairsLength()).to.eq(1)
 
     const pair = new Contract(create2Address, JSON.stringify(UniswapV2Pair.abi), provider)
+
     expect(await pair.factory()).to.eq(factory.address)
     expect(await pair.token0()).to.eq(TEST_ADDRESSES[0])
     expect(await pair.token1()).to.eq(TEST_ADDRESSES[1])
@@ -74,12 +80,15 @@ describe('MahaswapV1Factory', () => {
   it('setFeeTo', async () => {
     await expect(factory.connect(other).setFeeTo(other.address)).to.be.revertedWith('UniswapV2: FORBIDDEN')
     await factory.setFeeTo(wallet.address)
+
     expect(await factory.feeTo()).to.eq(wallet.address)
   })
 
   it('setFeeToSetter', async () => {
     await expect(factory.connect(other).setFeeToSetter(other.address)).to.be.revertedWith('UniswapV2: FORBIDDEN')
+
     await factory.setFeeToSetter(other.address)
+
     expect(await factory.feeToSetter()).to.eq(other.address)
     await expect(factory.setFeeToSetter(wallet.address)).to.be.revertedWith('UniswapV2: FORBIDDEN')
   })

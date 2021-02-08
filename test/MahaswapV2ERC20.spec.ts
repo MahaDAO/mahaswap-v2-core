@@ -1,18 +1,20 @@
-import chai, { expect } from 'chai'
 import { Contract } from 'ethers'
-import { MaxUint256 } from 'ethers/constants'
-import { bigNumberify, hexlify, keccak256, defaultAbiCoder, toUtf8Bytes } from 'ethers/utils'
-import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
+import chai, { expect } from 'chai'
 import { ecsign } from 'ethereumjs-util'
-
-import { expandTo18Decimals, getApprovalDigest } from './shared/utilities'
+import { MaxUint256 } from 'ethers/constants'
+import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
 
 import ERC20 from '../build/ERC20.json'
+import { expandTo18Decimals, getApprovalDigest } from './shared/utilities'
+import { bigNumberify, hexlify, keccak256, defaultAbiCoder, toUtf8Bytes } from 'ethers/utils'
+
 
 chai.use(solidity)
 
-const TOTAL_SUPPLY = expandTo18Decimals(10000)
+
 const TEST_AMOUNT = expandTo18Decimals(10)
+const TOTAL_SUPPLY = expandTo18Decimals(10000)
+
 
 describe('MahaswapV1ERC20', () => {
   const provider = new MockProvider({
@@ -23,12 +25,14 @@ describe('MahaswapV1ERC20', () => {
   const [wallet, other] = provider.getWallets()
 
   let token: Contract
+
   beforeEach(async () => {
     token = await deployContract(wallet, ERC20, [TOTAL_SUPPLY])
   })
 
   it('name, symbol, decimals, totalSupply, balanceOf, DOMAIN_SEPARATOR, PERMIT_TYPEHASH', async () => {
     const name = await token.name()
+
     expect(name).to.eq('MahaSwap V1')
     expect(await token.symbol()).to.eq('MSWAP-V1')
     expect(await token.decimals()).to.eq(18)
@@ -59,6 +63,7 @@ describe('MahaswapV1ERC20', () => {
     await expect(token.approve(other.address, TEST_AMOUNT))
       .to.emit(token, 'Approval')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
+
     expect(await token.allowance(wallet.address, other.address)).to.eq(TEST_AMOUNT)
   })
 
@@ -66,6 +71,7 @@ describe('MahaswapV1ERC20', () => {
     await expect(token.transfer(other.address, TEST_AMOUNT))
       .to.emit(token, 'Transfer')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
+
     expect(await token.balanceOf(wallet.address)).to.eq(TOTAL_SUPPLY.sub(TEST_AMOUNT))
     expect(await token.balanceOf(other.address)).to.eq(TEST_AMOUNT)
   })
@@ -77,6 +83,7 @@ describe('MahaswapV1ERC20', () => {
 
   it('transferFrom', async () => {
     await token.approve(other.address, TEST_AMOUNT)
+
     await expect(token.connect(other).transferFrom(wallet.address, other.address, TEST_AMOUNT))
       .to.emit(token, 'Transfer')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)
@@ -87,6 +94,7 @@ describe('MahaswapV1ERC20', () => {
 
   it('transferFrom:max', async () => {
     await token.approve(other.address, MaxUint256)
+
     await expect(token.connect(other).transferFrom(wallet.address, other.address, TEST_AMOUNT))
       .to.emit(token, 'Transfer')
       .withArgs(wallet.address, other.address, TEST_AMOUNT)

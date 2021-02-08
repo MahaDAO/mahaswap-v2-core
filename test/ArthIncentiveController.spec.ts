@@ -1,19 +1,19 @@
-import chai, { expect } from 'chai'
 import { Contract } from 'ethers'
-import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
-import { BigNumber, bigNumberify } from 'ethers/utils'
-
-import { expandTo18Decimals, mineBlock, encodePrice } from './shared/utilities'
-import { controllerFixture } from './shared/fixtures'
+import chai, { expect } from 'chai'
 import { AddressZero } from 'ethers/constants'
+import { BigNumber, bigNumberify } from 'ethers/utils'
+import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 
-const MINIMUM_LIQUIDITY = bigNumberify(10).pow(3)
+import { controllerFixture } from './shared/fixtures'
+import { expandTo18Decimals, mineBlock, encodePrice } from './shared/utilities'
+
 
 chai.use(solidity)
 
-const overrides = {
-    gasLimit: 9999999
-}
+
+const overrides = { gasLimit: 9999999 }
+const MINIMUM_LIQUIDITY = bigNumberify(10).pow(3)
+
 
 describe('ArthIncentiveController with test swapping', () => {
     const provider = new MockProvider({
@@ -21,6 +21,7 @@ describe('ArthIncentiveController with test swapping', () => {
         mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
         gasLimit: 9999999
     })
+
     const [wallet, other] = provider.getWallets()
     const loadFixture = createFixtureLoader(provider, [wallet])
 
@@ -33,6 +34,7 @@ describe('ArthIncentiveController with test swapping', () => {
 
     beforeEach(async () => {
         const fixture = await loadFixture(controllerFixture)
+
         factory = fixture.factory
         token0 = fixture.token0
         token1 = fixture.token1
@@ -47,10 +49,11 @@ describe('ArthIncentiveController with test swapping', () => {
     it('mint', async () => {
         const token0Amount = expandTo18Decimals(1)
         const token1Amount = expandTo18Decimals(4)
+        const expectedLiquidity = expandTo18Decimals(2)
+
         await token0.transfer(pair.address, token0Amount)
         await token1.transfer(pair.address, token1Amount)
 
-        const expectedLiquidity = expandTo18Decimals(2)
         await expect(pair.mint(wallet.address, overrides))
             .to.emit(pair, 'Transfer')
             .withArgs(AddressZero, AddressZero, MINIMUM_LIQUIDITY)
@@ -65,7 +68,9 @@ describe('ArthIncentiveController with test swapping', () => {
         expect(await pair.balanceOf(wallet.address)).to.eq(expectedLiquidity.sub(MINIMUM_LIQUIDITY))
         expect(await token0.balanceOf(pair.address)).to.eq(token0Amount)
         expect(await token1.balanceOf(pair.address)).to.eq(token1Amount)
+
         const reserves = await pair.getReserves()
+
         expect(reserves[0]).to.eq(token0Amount)
         expect(reserves[1]).to.eq(token1Amount)
     })
@@ -95,10 +100,14 @@ describe('ArthIncentiveController with test swapping', () => {
             const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase
             await addLiquidity(token0Amount, token1Amount)
             await token0.transfer(pair.address, swapAmount)
-            await expect(pair.swap(0, expectedOutputAmount.add(1), wallet.address, '0x', overrides)).to.be.revertedWith(
-                'UniswapV2: K'
-            )
+
+            await expect(pair.swap(0, expectedOutputAmount.add(1), wallet.address, '0x', overrides))
+                .to.be.revertedWith(
+                    'UniswapV2: K'
+                )
+
             await pair.swap(0, expectedOutputAmount, wallet.address, '0x', overrides)
+
             expect(await incentiveToken.balanceOf(wallet.address)).to.lt(oldBalanceOfIncentiveToken);
         })
     })
@@ -117,9 +126,12 @@ describe('ArthIncentiveController with test swapping', () => {
             const [outputAmount, token0Amount, token1Amount, inputAmount] = optimisticTestCase
             await addLiquidity(token0Amount, token1Amount)
             await token0.transfer(pair.address, inputAmount)
-            await expect(pair.swap(outputAmount.add(1), 0, wallet.address, '0x', overrides)).to.be.revertedWith(
-                'UniswapV2: K'
-            )
+
+            await expect(pair.swap(outputAmount.add(1), 0, wallet.address, '0x', overrides))
+                .to.be.revertedWith(
+                    'UniswapV2: K'
+                )
+
             await pair.swap(outputAmount, 0, wallet.address, '0x', overrides)
 
             // NOTE: not sure why this is should be less than, figured since we are transfering token0.
@@ -164,12 +176,15 @@ describe('ArthIncentiveController with test swapping', () => {
                 .withArgs(wallet.address, swapAmount, 0, 0, expectedOutputAmount, wallet.address)
 
             const reserves = await pair.getReserves()
+
             expect(reserves[0]).to.eq(token0Amount.add(swapAmount))
             expect(reserves[1]).to.eq(token1Amount.sub(expectedOutputAmount))
             expect(await token0.balanceOf(pair.address)).to.eq(token0Amount.add(swapAmount))
             expect(await token1.balanceOf(pair.address)).to.eq(token1Amount.sub(expectedOutputAmount))
+
             const totalSupplyToken0 = await token0.totalSupply()
             const totalSupplyToken1 = await token1.totalSupply()
+
             expect(await incentiveToken.balanceOf(wallet.address)).to.lt(oldBalanceOfIncentiveToken);
             expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(token0Amount).sub(swapAmount))
             expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
@@ -206,17 +221,20 @@ describe('ArthIncentiveController with test swapping', () => {
                 .withArgs(wallet.address, 0, swapAmount, expectedOutputAmount, 0, wallet.address)
 
             const reserves = await pair.getReserves()
+
             expect(reserves[0]).to.eq(token0Amount.sub(expectedOutputAmount))
             expect(reserves[1]).to.eq(token1Amount.add(swapAmount))
             expect(await token0.balanceOf(pair.address)).to.eq(token0Amount.sub(expectedOutputAmount))
             expect(await token1.balanceOf(pair.address)).to.eq(token1Amount.add(swapAmount))
+
             const totalSupplyToken0 = await token0.totalSupply()
             const totalSupplyToken1 = await token1.totalSupply()
 
             expect(await incentiveToken.balanceOf(wallet.address)).to.gte(oldBalanceOfIncentiveToken);
-
-            expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(token0Amount).add(expectedOutputAmount))
-            expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).sub(swapAmount))
+            expect(await token0.balanceOf(wallet.address))
+                .to.eq(totalSupplyToken0.sub(token0Amount).add(expectedOutputAmount))
+            expect(await token1.balanceOf(wallet.address))
+                .to.eq(totalSupplyToken1.sub(token1Amount).sub(swapAmount))
         })
     })
 
@@ -235,6 +253,7 @@ describe('ArthIncentiveController with test swapping', () => {
         await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
         const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides)
         const receipt = await tx.wait()
+
         expect(receipt.gasUsed).to.eq(125658)
     })
 
@@ -245,6 +264,7 @@ describe('ArthIncentiveController with test swapping', () => {
 
         const expectedLiquidity = expandTo18Decimals(3)
         await pair.transfer(pair.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
+
         await expect(pair.burn(wallet.address, overrides))
             .to.emit(pair, 'Transfer')
             .withArgs(pair.address, AddressZero, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
@@ -261,8 +281,10 @@ describe('ArthIncentiveController with test swapping', () => {
         expect(await pair.totalSupply()).to.eq(MINIMUM_LIQUIDITY)
         expect(await token0.balanceOf(pair.address)).to.eq(1000)
         expect(await token1.balanceOf(pair.address)).to.eq(1000)
+
         const totalSupplyToken0 = await token0.totalSupply()
         const totalSupplyToken1 = await token1.totalSupply()
+
         expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(1000))
         expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(1000))
     })
@@ -277,6 +299,7 @@ describe('ArthIncentiveController with test swapping', () => {
         await pair.sync(overrides)
 
         const initialPrice = encodePrice(token0Amount, token1Amount)
+
         expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0])
         expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1])
         expect((await pair.getReserves())[2]).to.eq(blockTimestamp + 1)
@@ -293,8 +316,8 @@ describe('ArthIncentiveController with test swapping', () => {
 
         await mineBlock(provider, blockTimestamp + 20)
         await pair.sync(overrides)
-
         const newPrice = encodePrice(expandTo18Decimals(6), expandTo18Decimals(2))
+
         expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0].mul(10).add(newPrice[0].mul(10)))
         expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1].mul(10).add(newPrice[1].mul(10)))
         expect((await pair.getReserves())[2]).to.eq(blockTimestamp + 20)

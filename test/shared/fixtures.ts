@@ -2,13 +2,12 @@ import { Contract, Wallet } from 'ethers'
 import { Web3Provider } from 'ethers/providers'
 import { deployContract } from 'ethereum-waffle'
 
-import { expandTo18Decimals } from './utilities'
-
 import ERC20 from '../../build/ERC20.json'
-import UniswapV2Factory from '../../build/MahaswapV1Factory.json'
+import { expandTo18Decimals } from './utilities'
 import UniswapV2Pair from '../../build/MahaswapV1Pair.json'
-import ArthIncentiveController from '../../build/ArthIncentiveController.json'
+import UniswapV2Factory from '../../build/MahaswapV1Factory.json'
 import MockBurnableERC20 from '../../build/MockBurnableERC20.json'
+import ArthIncentiveController from '../../build/ArthIncentiveController.json'
 
 
 interface FactoryFixture {
@@ -23,6 +22,7 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
   const factory = await deployContract(wallet, UniswapV2Factory, [wallet.address], overrides)
   return { factory }
 }
+
 
 interface PairFixture extends FactoryFixture {
   token0: Contract
