@@ -75,7 +75,7 @@ export async function controllerFixture(provider: Web3Provider, [wallet]: Wallet
   const controller = await deployContract(
     wallet,
     ArthIncentiveController,
-    [pairAddress, token0.address, incentiveToken.address, 1000, 1],
+    [pairAddress, token0.address, incentiveToken.address, 1000, expandTo18Decimals(1)],
     overrides
   )
 

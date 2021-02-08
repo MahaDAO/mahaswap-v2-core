@@ -152,6 +152,8 @@ describe('ArthIncentiveController with test swapping', () => {
     ].map(a => a.map(n => (typeof n === 'string' ? bigNumberify(n) : expandTo18Decimals(n))))
     swapToken0TestCases.forEach((swapTestCase, i) => {
         it(`swap:token0:${i}`, async () => {
+            expect(await controller.isTokenAProtocolToken()).to.eq(true);
+
             const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase
 
             // const token0Amount = expandTo18Decimals(5)

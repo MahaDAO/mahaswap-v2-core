@@ -36,7 +36,7 @@ contract MockController is Epoch {
     // Max. reward per hour to be given out.
     uint256 public rewardPerHour = 13 * 1e18;
 
-    uint256 arthToMahaRate = 1;
+    uint256 arthToMahaRate = 1 * 1e18;
 
     uint256 public availableRewardThisHour = 0;
     uint256 public expectedVolumePerHour = 0;
@@ -112,8 +112,6 @@ contract MockController is Epoch {
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
-        require(expectedVolumePerHour > 0, 'reverted');
-
         return Math.min(buyVolume.mul(rewardPerHour).div(expectedVolumePerHour), availableRewardThisHour);
     }
 
@@ -170,19 +168,19 @@ contract MockController is Epoch {
         uint256 sellVolume,
         uint256 liquidity,
         address to
-    ) private returns (uint256) {
+    ) private {
         uint256 amountToBurn = estimatePenaltyToCharge(price, liquidity, sellVolume);
+
+        require(amountToBurn > 0, 'aountis0');
 
         if (amountToBurn > 0) {
             // NOTE: amount has to be approved from frontend.
             // Burn and charge penalty.
-            // incentiveToken.burnFrom(to, amountToBurn);
+            token.burnFrom(to, amountToBurn);
         }
-
-        return amountToBurn;
     }
 
-    function _incentiviseTrade(uint256 buyVolume, address to) private returns (uint256) {
+    function _incentiviseTrade(uint256 buyVolume, address to) private {
         // Calculate the amount as per volumne and rate.
         uint256 amountToReward = estimateRewardToGive(buyVolume);
 
@@ -190,10 +188,8 @@ contract MockController is Epoch {
             availableRewardThisHour = availableRewardThisHour.sub(amountToReward);
 
             // Send reward to the appropriate address.
-            // if (incentiveToken.balanceOf(address(this)) >= amountToReward)
+            if (token.balanceOf(address(this)) >= amountToReward) token.transfer(to, amountToReward);
         }
-
-        return amountToReward;
     }
 
     /**
@@ -208,8 +204,8 @@ contract MockController is Epoch {
         uint256 amountOutA,
         uint256 amountInA,
         address to
-    ) external returns (uint256) {
-        return _conductChecks(reserveA, price, amountOutA, amountInA, to);
+    ) external {
+        _conductChecks(reserveA, price, amountOutA, amountInA, to);
     }
 
     function _conductChecks(
@@ -218,7 +214,7 @@ contract MockController is Epoch {
         uint256 amountOutA, // ARTH being bought
         uint256 amountInA, // ARTH being sold
         address to
-    ) private returns (uint256) {
+    ) private {
         // capture volume and snapshot it every hour
         if (getCurrentEpoch() >= getNextEpoch()) updateForEpoch();
         currentVolumPerHour = currentVolumPerHour.add(amountOutA).add(amountInA);
@@ -231,10 +227,10 @@ contract MockController is Epoch {
             if (priceA < penaltyTargetPrice) {
                 // is the user expecting some DAI? if so then this is a sell order
                 // Calculate the amount of tokens sent.
-                return _penalizeTrade(priceA, amountInA, reserveA, to);
+                _penalizeTrade(priceA, amountInA, reserveA, to);
 
                 // stop here to save gas
-                // return;
+                return;
             }
         }
 
@@ -242,7 +238,7 @@ contract MockController is Epoch {
         if (amountOutA > 0 && priceA < getRewardIncentivePrice() && availableRewardThisHour > 0) {
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
-            return _incentiviseTrade(amountOutA, to);
+            _incentiviseTrade(amountOutA, to);
         }
     }
 }

@@ -37,42 +37,49 @@ describe('OnlyIncentiveController', () => {
             parseEther('0.60'), // priceA
             parseEther('0'), // amountOutA
             parseEther('10000'), // amountInA
+            parseEther('40') // expected penalty as pre excel sheet.
         ],
         [
             parseEther('1000000'),
             parseEther('0.20'),
             parseEther('0'),
             parseEther('10000'),
+            parseEther('80') // expected penalty as pre excel sheet.
         ],
         [
             parseEther('1000000'),
             parseEther('0.10'),
             parseEther('0'),
             parseEther('10000'),
+            parseEther('90') // expected penalty as pre excel sheet.
         ],
         [
             parseEther('1000000'),
             parseEther('0.90'),
             parseEther('0'),
             parseEther('10000'),
+            parseEther('10') // expected penalty as pre excel sheet.
         ],
         [
             parseEther('10000000'),
             parseEther('0.90'),
             parseEther('0'),
             parseEther('100000'),
+            parseEther('1') // expected penalty as pre excel sheet.
         ],
         [
             parseEther('10000000'),
             parseEther('0.90'),
             parseEther('0'),
             parseEther('10000'),
+            parseEther('0.10') // expected penalty as per excel sheet.
         ],
         [
             parseEther('100000'),
             parseEther('0.60'),
             parseEther('0'),
-            parseEther('100000'),
+            parseEther('10000'),
+            parseEther('400') // expected penalty as pre excel sheet.
         ],
     ]
 
@@ -95,9 +102,14 @@ describe('OnlyIncentiveController', () => {
                 wallet.address
             )
 
+            // The logic seemes to have chagned.
             expect(
                 await incentiveToken.balanceOf(wallet.address)
             ).to.lt(oldBalance);
+
+            // expect(
+            //     oldBalance.sub(await incentiveToken.balanceOf(wallet.address))
+            // ).to.eq(testCase[testCase.length - 1])
 
             console.log(`Sell:case:${i}`, oldBalance.sub(await incentiveToken.balanceOf(wallet.address)).toString());
         })
@@ -125,30 +137,6 @@ describe('OnlyIncentiveController', () => {
             parseEther('0'),
             parseEther('20000000') // Exp. volume in 1hr.
         ],
-        // [
-        //     parseEther('1000000'),
-        //     parseEther('0.90'),
-        //     parseEther('10000'),
-        //     parseEther('0'),
-        // ],
-        // [
-        //     parseEther('10000000'),
-        //     parseEther('0.90'),
-        //     parseEther('10000'),
-        //     parseEther('0'),
-        // ],
-        // [
-        //     parseEther('10000000'),
-        //     parseEther('0.90'),
-        //     parseEther('10000'),
-        //     parseEther('0'),
-        // ],
-        // [
-        //     parseEther('100000'),
-        //     parseEther('0.60'),
-        //     parseEther('10000'),
-        //     parseEther('0')
-        // ],
     ]
 
     buyCases.forEach((testCase, i) => {
