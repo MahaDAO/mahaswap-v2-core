@@ -36,6 +36,8 @@ contract MockController is Epoch {
     // Max. reward per hour to be given out.
     uint256 public rewardPerHour = 13 * 1e18;
 
+    uint256 arthToMahaRate = 1;
+
     uint256 public availableRewardThisHour = 0;
     uint256 public expectedVolumePerHour = 0;
     uint256 public currentVolumPerHour = 0;
@@ -93,18 +95,20 @@ contract MockController is Epoch {
         uint256 liquidity,
         uint256 sellVolume
     ) public view returns (uint256) {
+        uint256 targetPrice = getPenaltyPrice();
+
         // % of pool = sellVolume / liquidity
         // % of deviation from target price = (tgt_price - price) / price
         // amountToburn = sellVolume * % of deviation from target price * % of pool * 100
+        if (price >= targetPrice) return 0;
 
-        uint256 targetPrice = getPenaltyPrice();
-        if (price > targetPrice) return 0;
-
-        uint256 percentOfPool = sellVolume.mul(1e18).div(liquidity);
-        uint256 deviationFromTarget = targetPrice.sub(price).mul(1e18).div(targetPrice);
+        uint256 percentOfPool = sellVolume.mul(10000).div(liquidity);
+        uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
+        uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget); // a number from 0-100%
 
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
-        return sellVolume.mul(deviationFromTarget).mul(percentOfPool).div(uint256(1e18).mul(1e18));
+        // NOTE: multiplication by 100, is removed in the mock controller
+        return sellVolume.mul(feeToCharge).div(10000).mul(arthToMahaRate).div(1e18);
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
@@ -114,6 +118,11 @@ contract MockController is Epoch {
     /**
      * Setters.
      */
+
+    function setArthToMahaRate(uint256 rate) public {
+        arthToMahaRate = rate;
+    }
+
     function setIncentiveToken(address newToken) public {
         require(newToken != address(0), 'Pair: invalid token');
         token = IBurnableERC20(newToken);
@@ -159,27 +168,30 @@ contract MockController is Epoch {
         uint256 sellVolume,
         uint256 liquidity,
         address to
-    ) private returns (uint256 amountToBurn) {
-        amountToBurn = estimatePenaltyToCharge(price, liquidity, sellVolume);
+    ) private returns (uint256) {
+        uint256 amountToBurn = estimatePenaltyToCharge(price, liquidity, sellVolume);
 
         if (amountToBurn > 0) {
             // NOTE: amount has to be approved from frontend.
             // Burn and charge penalty.
-            token.burnFrom(to, amountToBurn);
+            // incentiveToken.burnFrom(to, amountToBurn);
         }
+
+        return amountToBurn;
     }
 
-    function _incentiviseTrade(uint256 buyVolume, address to) private {
+    function _incentiviseTrade(uint256 buyVolume, address to) private returns (uint256) {
         // Calculate the amount as per volumne and rate.
-        // Cap the amount to a maximum rewardPerHour if amount > maxRewardPerHour.
         uint256 amountToReward = estimateRewardToGive(buyVolume);
 
         if (amountToReward > 0) {
             availableRewardThisHour = availableRewardThisHour.sub(amountToReward);
 
-            // // Send reward to the appropriate address.
-            token.transfer(to, amountToReward);
+            // Send reward to the appropriate address.
+            // if (incentiveToken.balanceOf(address(this)) >= amountToReward)
         }
+
+        return amountToReward;
     }
 
     /**
@@ -190,12 +202,12 @@ contract MockController is Epoch {
      */
     function conductChecks(
         uint112 reserveA,
-        uint256 priceALast,
+        uint256 price,
         uint256 amountOutA,
         uint256 amountInA,
         address to
-    ) public {
-        _conductChecks(reserveA, priceALast, amountOutA, amountInA, to);
+    ) external returns (uint256) {
+        return _conductChecks(reserveA, price, amountOutA, amountInA, to);
     }
 
     function _conductChecks(
@@ -204,22 +216,31 @@ contract MockController is Epoch {
         uint256 amountOutA, // ARTH being bought
         uint256 amountInA, // ARTH being sold
         address to
-    ) private {
+    ) private returns (uint256) {
         // capture volume and snapshot it every hour
+        if (getCurrentEpoch() >= getNextEpoch()) updateForEpoch();
         currentVolumPerHour = currentVolumPerHour.add(amountOutA).add(amountInA);
-        if (canUpdate()) updateForEpoch();
 
-        // Check if we are selling; then penalize the user
-        if (amountInA > 0 && _penalizeTrade(priceA, amountInA, reserveA, to) > 0) {
-            return;
+        // Check if we are selling and if we are blow the target price?
+        if (amountInA > 0) {
+            // Check if we are below the targetPrice.
+            uint256 penaltyTargetPrice = getPenaltyPrice();
+
+            if (priceA < penaltyTargetPrice) {
+                // is the user expecting some DAI? if so then this is a sell order
+                // Calculate the amount of tokens sent.
+                return _penalizeTrade(priceA, amountInA, reserveA, to);
+
+                // stop here to save gas
+                // return;
+            }
         }
 
         // Check if we are buying and below the target price
-        if (amountOutA > 0 && priceA < getRewardIncentivePrice()) {
+        if (amountOutA > 0 && priceA < getRewardIncentivePrice() && availableRewardThisHour > 0) {
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
-            _incentiviseTrade(amountOutA, to);
-            return;
+            return _incentiviseTrade(amountOutA, to);
         }
     }
 }
