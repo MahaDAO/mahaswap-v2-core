@@ -10,9 +10,9 @@ import MockBurnableERC20 from '../build/MockBurnableERC20.json'
 
 chai.use(solidity)
 
-const overrides = {
-    gasLimit: 9999999
-}
+
+const overrides = { gasLimit: 9999999 }
+
 
 describe('OnlyIncentiveController', () => {
     const provider = new MockProvider({
@@ -33,10 +33,10 @@ describe('OnlyIncentiveController', () => {
 
     const sellCases: any[][] = [
         [
-            parseEther('1000000'),
-            parseEther('0.60'),
-            parseEther('0'),
-            parseEther('10000'),
+            parseEther('1000000'), // reserveA for mock Controller contract.
+            parseEther('0.60'), // priceA
+            parseEther('0'), // amountOutA
+            parseEther('10000'), // amountInA
         ],
         [
             parseEther('1000000'),
@@ -103,10 +103,10 @@ describe('OnlyIncentiveController', () => {
 
     const buyCases: any[][] = [
         [
-            parseEther('1000000'),
-            parseEther('0.60'),
-            parseEther('10000'),
-            parseEther('0'),
+            parseEther('1000000'),  // reserveA for mock Controller contract.
+            parseEther('0.60'),  // reserveA for mock Controller contract.
+            parseEther('10000'), // reserveA for mock Controller contract. 
+            parseEther('0'),  // reserveA for mock Controller contract.
             parseEther('100000') // Exp. volume in 1hr.
         ],
         [
