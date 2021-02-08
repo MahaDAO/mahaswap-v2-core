@@ -2,7 +2,7 @@
 
 pragma solidity >=0.5.0;
 
-interface IArthswapV1Pair {
+interface IMahaswapV1Pair {
     function MINIMUM_LIQUIDITY() external pure returns (uint256);
 
     function factory() external view returns (address);

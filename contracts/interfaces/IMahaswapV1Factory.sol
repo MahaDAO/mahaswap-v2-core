@@ -4,7 +4,7 @@ pragma solidity >=0.5.0;
 
 import './IUniswapV2Factory.sol';
 
-interface IArthswapV1Factory {
+interface IMahaswapV1Factory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
 
     function feeTo() external view returns (address);

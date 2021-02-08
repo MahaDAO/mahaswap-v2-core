@@ -5,7 +5,7 @@ pragma solidity =0.5.16;
 import {State} from './State.sol';
 
 /**
- * NOTE: Contract ArthswapV1Pair should be the owner of this controller.
+ * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
  */
 contract Getters is State {
     /**

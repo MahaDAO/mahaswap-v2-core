@@ -14,7 +14,7 @@ async function main() {
 
 
   // Fetch contract factories.
-  const ArthswapV1Factory = await ethers.getContractFactory('ArthswapV1Factory');
+  const MahaswapV1Factory = await ethers.getContractFactory('MahaswapV1Factory');
 
 
   // Deploy new treasury.
@@ -23,7 +23,7 @@ async function main() {
     '0x0000000000000000000000000000000000000000'
   ]
 
-  const factory = await ArthswapV1Factory.connect(operator).deploy(...params);
+  const factory = await MahaswapV1Factory.connect(operator).deploy(...params);
 
   console.log(`\nTreasury details: `)
   console.log(` - operator is ${operator.address}`)

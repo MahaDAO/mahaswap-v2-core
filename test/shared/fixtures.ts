@@ -5,8 +5,8 @@ import { deployContract } from 'ethereum-waffle'
 import { expandTo18Decimals } from './utilities'
 
 import ERC20 from '../../build/ERC20.json'
-import UniswapV2Factory from '../../build/ArthswapV1Factory.json'
-import UniswapV2Pair from '../../build/ArthswapV1Pair.json'
+import UniswapV2Factory from '../../build/MahaswapV1Factory.json'
+import UniswapV2Pair from '../../build/MahaswapV1Pair.json'
 import ArthIncentiveController from '../../build/ArthIncentiveController.json'
 import MockBurnableERC20 from '../../build/MockBurnableERC20.json'
 

@@ -2,9 +2,9 @@
 
 pragma solidity =0.5.16;
 
-import '../ArthswapV1ERC20.sol';
+import '../MahaswapV1ERC20.sol';
 
-contract ERC20 is ArthswapV1ERC20 {
+contract ERC20 is MahaswapV1ERC20 {
     constructor(uint256 _totalSupply) public {
         _mint(msg.sender, _totalSupply);
     }

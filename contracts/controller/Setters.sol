@@ -6,7 +6,7 @@ import {Getters} from './Getters.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 
 /**
- * NOTE: Contract ArthswapV1Pair should be the owner of this controller.
+ * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
  */
 contract Setters is Getters {
     /**

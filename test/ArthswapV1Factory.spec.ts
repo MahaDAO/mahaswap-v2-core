@@ -7,7 +7,7 @@ import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
 import { getCreate2Address } from './shared/utilities'
 import { factoryFixture } from './shared/fixtures'
 
-import UniswapV2Pair from '../build/ArthswapV1Pair.json'
+import UniswapV2Pair from '../build/MahaswapV1Pair.json'
 
 chai.use(solidity)
 
@@ -16,7 +16,7 @@ const TEST_ADDRESSES: [string, string] = [
   '0x2000000000000000000000000000000000000000'
 ]
 
-describe('ArthswapV1Factory', () => {
+describe('MahaswapV1Factory', () => {
   const provider = new MockProvider({
     hardfork: 'istanbul',
     mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',

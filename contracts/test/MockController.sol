@@ -9,7 +9,7 @@ import '../interfaces/IUniswapOracle.sol';
 import '../interfaces/IBurnableERC20.sol';
 
 /**
- * NOTE: Contract ArthswapV1Pair should be the owner of this controller.
+ * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
  */
 contract MockController is Epoch {
     using SafeMath for uint256;

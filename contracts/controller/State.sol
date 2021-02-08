@@ -9,7 +9,7 @@ import {IUniswapOracle} from '../interfaces/IUniswapOracle.sol';
 import {Ownable} from '../libraries/Ownable.sol';
 
 /**
- * NOTE: Contract ArthswapV1Pair should be the owner of this controller.
+ * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
  */
 contract State is Ownable {
     using SafeMath for uint256;

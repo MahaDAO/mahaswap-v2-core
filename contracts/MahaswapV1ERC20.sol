@@ -3,7 +3,7 @@ pragma solidity =0.5.16;
 import './interfaces/IUniswapV2ERC20.sol';
 import './libraries/SafeMath.sol';
 
-contract ArthswapV1ERC20 is IUniswapV2ERC20 {
+contract MahaswapV1ERC20 is IUniswapV2ERC20 {
     using SafeMath for uint256;
 
     string public constant name = 'MahaSwap V1';

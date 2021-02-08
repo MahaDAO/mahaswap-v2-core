@@ -4,15 +4,15 @@ pragma solidity =0.5.16;
 
 import './libraries/Ownable.sol';
 import './libraries/Math.sol';
-import './ArthswapV1ERC20.sol';
+import './MahaswapV1ERC20.sol';
 import './interfaces/IERC20.sol';
 import './libraries/UQ112x112.sol';
-import './interfaces/IArthswapV1Pair.sol';
-import './interfaces/IArthswapV1Callee.sol';
-import './interfaces/IArthswapV1Factory.sol';
+import './interfaces/IMahaswapV1Pair.sol';
+import './interfaces/IMahaswapV1Callee.sol';
+import './interfaces/IMahaswapV1Factory.sol';
 import './interfaces/IIncentiveController.sol';
 
-contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
+contract MahaswapV1Pair is IMahaswapV1Pair, MahaswapV1ERC20, Ownable {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
@@ -248,7 +248,7 @@ contract ArthswapV1Pair is IArthswapV1Pair, ArthswapV1ERC20, Ownable {
             require(to != _token0 && to != _token1, 'UniswapV2: INVALID_TO');
             if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
             if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
-            if (data.length > 0) IArthswapV1Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);
+            if (data.length > 0) IMahaswapV1Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);
             balance0 = IERC20(_token0).balanceOf(address(this));
             balance1 = IERC20(_token1).balanceOf(address(this));
         }

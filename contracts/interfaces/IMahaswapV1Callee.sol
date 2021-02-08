@@ -2,7 +2,7 @@
 
 pragma solidity >=0.5.0;
 
-interface IArthswapV1Callee {
+interface IMahaswapV1Callee {
     function uniswapV2Call(
         address sender,
         uint256 amount0,

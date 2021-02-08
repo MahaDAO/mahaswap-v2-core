@@ -3,10 +3,10 @@
 pragma solidity =0.5.16;
 
 import './libraries/Ownable.sol';
-import './ArthswapV1Pair.sol';
+import './MahaswapV1Pair.sol';
 import './interfaces/IUniswapV2Factory.sol';
 
-contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
+contract MahaswapV1Factory is IMahaswapV1Factory, Ownable {
     address public feeTo;
     address public feeToSetter;
 
@@ -28,14 +28,14 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), 'UniswapV2: ZERO_ADDRESS');
         require(getPair[token0][token1] == address(0), 'UniswapV2: PAIR_EXISTS'); // single check is sufficient
-        // bytes memory bytecode = type(ArthswapV1Pair).creationCode();
-        bytes memory bytecode = type(ArthswapV1Pair).creationCode;
 
+        bytes memory bytecode = type(MahaswapV1Pair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IArthswapV1Pair(pair).initialize(token0, token1);
+
+        IMahaswapV1Pair(pair).initialize(token0, token1);
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);
@@ -53,10 +53,10 @@ contract ArthswapV1Factory is IArthswapV1Factory, Ownable {
     }
 
     function setIncentiveControllerForPair(address pair, address controller) public onlyOwner {
-        IArthswapV1Pair(pair).setIncentiveController(controller);
+        IMahaswapV1Pair(pair).setIncentiveController(controller);
     }
 
     function setSwapingPausedForPair(address pair, bool isSet) public onlyOwner {
-        IArthswapV1Pair(pair).setSwapingPaused(isSet);
+        IMahaswapV1Pair(pair).setSwapingPaused(isSet);
     }
 }

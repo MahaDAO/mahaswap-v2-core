@@ -5,12 +5,12 @@ pragma solidity =0.5.16;
 import {Math} from '../libraries/Math.sol';
 import {Setters} from './Setters.sol';
 import {IIncentiveController} from '../interfaces/IIncentiveController.sol';
-import {IArthswapV1Pair} from '../interfaces/IArthswapV1Pair.sol';
+import {IMahaswapV1Pair} from '../interfaces/IMahaswapV1Pair.sol';
 import {Epoch} from '../Epoch.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 
 /**
- * NOTE: Contract ArthswapV1Pair should be the owner of this controller.
+ * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
  */
 contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     uint256 public arthToMahaRate;
@@ -28,7 +28,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         pairAddress = _pairAddress;
         protocolTokenAddress = _protocolTokenAddress;
         incentiveToken = IBurnableERC20(_incentiveToken);
-        isTokenAProtocolToken = IArthswapV1Pair(_pairAddress).token0() == _protocolTokenAddress;
+        isTokenAProtocolToken = IMahaswapV1Pair(_pairAddress).token0() == _protocolTokenAddress;
         rewardPerHour = _rewardPerHour;
         arthToMahaRate = _arthToMahaRate;
 
