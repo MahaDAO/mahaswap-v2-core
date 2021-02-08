@@ -41,7 +41,7 @@ contract State is Ownable {
     uint256 public rewardPerHour = 0;
 
     uint256 public availableRewardThisHour = 0;
-    uint256 public expectedVolumePerHour = 1;
+    uint256 public expectedVolumePerEpoch = 1;
     uint256 public currentVolumPerHour = 0;
 
     /**

@@ -32,12 +32,12 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         rewardPerHour = _rewardPerHour;
         arthToMahaRate = _arthToMahaRate;
 
-        expectedVolumePerHour = 1000 * 1e18;
+        expectedVolumePerEpoch = 1000 * 1e18;
         availableRewardThisHour = rewardPerHour;
     }
 
     function updateForEpoch() private {
-        expectedVolumePerHour = Math.max(currentVolumPerHour, 1);
+        expectedVolumePerEpoch = Math.max(currentVolumPerHour, 1);
         availableRewardThisHour = rewardPerHour;
         currentVolumPerHour = 0;
 
@@ -66,7 +66,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
-        return Math.min(buyVolume.mul(rewardPerHour).div(expectedVolumePerHour), availableRewardThisHour);
+        return Math.min(buyVolume.mul(rewardPerHour).div(expectedVolumePerEpoch), availableRewardThisHour);
     }
 
     /**
