@@ -29,8 +29,8 @@ contract Setters is Getters {
         isTokenAProtocolToken = val;
     }
 
-    function setMahaPerHour(uint256 _rewardPerHour) public onlyOwner {
-        rewardPerHour = _rewardPerHour;
+    function setMahaPerEpoch(uint256 _rewardPerEpoch) public onlyOwner {
+        rewardPerEpoch = _rewardPerEpoch;
     }
 
     function setUseOracle(bool isSet) public onlyOwner {

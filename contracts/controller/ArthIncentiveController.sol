@@ -22,24 +22,24 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         address _pairAddress,
         address _protocolTokenAddress,
         address _incentiveToken,
-        uint256 _rewardPerHour,
+        uint256 _rewardPerEpoch,
         uint256 _arthToMahaRate
     ) public Epoch(60 * 60, block.timestamp, 0) {
         pairAddress = _pairAddress;
         protocolTokenAddress = _protocolTokenAddress;
         incentiveToken = IBurnableERC20(_incentiveToken);
         isTokenAProtocolToken = IMahaswapV1Pair(_pairAddress).token0() == _protocolTokenAddress;
-        rewardPerHour = _rewardPerHour;
+        rewardPerEpoch = _rewardPerEpoch;
         arthToMahaRate = _arthToMahaRate;
 
         expectedVolumePerEpoch = 1000 * 1e18;
-        availableRewardThisHour = rewardPerHour;
+        availableRewardThisEpoch = rewardPerEpoch;
     }
 
     function updateForEpoch() private {
-        expectedVolumePerEpoch = Math.max(currentVolumPerHour, 1);
-        availableRewardThisHour = rewardPerHour;
-        currentVolumPerHour = 0;
+        expectedVolumePerEpoch = Math.max(currentVolumPerEpoch, 1);
+        availableRewardThisEpoch = rewardPerEpoch;
+        currentVolumPerEpoch = 0;
 
         lastExecutedAt = block.timestamp;
     }
@@ -66,7 +66,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
-        return Math.min(buyVolume.mul(rewardPerHour).div(expectedVolumePerEpoch), availableRewardThisHour);
+        return Math.min(buyVolume.mul(rewardPerEpoch).div(expectedVolumePerEpoch), availableRewardThisEpoch);
     }
 
     /**
@@ -96,7 +96,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         uint256 amountToReward = estimateRewardToGive(buyVolume);
 
         if (amountToReward > 0) {
-            availableRewardThisHour = availableRewardThisHour.sub(amountToReward);
+            availableRewardThisEpoch = availableRewardThisEpoch.sub(amountToReward);
 
             // Send reward to the appropriate address.
             if (incentiveToken.balanceOf(address(this)) >= amountToReward) incentiveToken.transfer(to, amountToReward);
@@ -139,9 +139,9 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         uint256 amountInA, // ARTH being sold
         address to
     ) private {
-        // capture volume and snapshot it every hour
+        // capture volume and snapshot it every epoch.
         if (getCurrentEpoch() >= getNextEpoch()) updateForEpoch();
-        currentVolumPerHour = currentVolumPerHour.add(amountOutA).add(amountInA);
+        currentVolumPerEpoch = currentVolumPerEpoch.add(amountOutA).add(amountInA);
 
         // Check if we are selling and if we are blow the target price?
         if (amountInA > 0) {
@@ -159,7 +159,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         }
 
         // Check if we are buying and below the target price
-        if (amountOutA > 0 && priceA < getRewardIncentivePrice() && availableRewardThisHour > 0) {
+        if (amountOutA > 0 && priceA < getRewardIncentivePrice() && availableRewardThisEpoch > 0) {
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
             _incentiviseTrade(amountOutA, to);

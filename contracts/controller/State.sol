@@ -38,11 +38,11 @@ contract State is Ownable {
     bool public isTokenAProtocolToken = true;
 
     // Max. reward per hour to be given out.
-    uint256 public rewardPerHour = 0;
+    uint256 public rewardPerEpoch = 0;
 
-    uint256 public availableRewardThisHour = 0;
+    uint256 public availableRewardThisEpoch = 0;
     uint256 public expectedVolumePerEpoch = 1;
-    uint256 public currentVolumPerHour = 0;
+    uint256 public currentVolumPerEpoch = 0;
 
     /**
      * Modifier.
