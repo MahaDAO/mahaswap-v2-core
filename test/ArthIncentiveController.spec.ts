@@ -25,20 +25,20 @@ describe('ArthIncentiveController with test swapping', () => {
     const [wallet, other] = provider.getWallets()
     const loadFixture = createFixtureLoader(provider, [wallet])
 
-    let factory: Contract
+    let pair: Contract
     let token0: Contract
     let token1: Contract
-    let pair: Contract
+    let factory: Contract
     let controller: Contract
     let incentiveToken: Contract
 
     beforeEach(async () => {
         const fixture = await loadFixture(controllerFixture)
 
-        factory = fixture.factory
+        pair = fixture.pair
         token0 = fixture.token0
         token1 = fixture.token1
-        pair = fixture.pair
+        factory = fixture.factory
         controller = fixture.controller
         incentiveToken = fixture.incentiveToken
 
@@ -65,9 +65,9 @@ describe('ArthIncentiveController with test swapping', () => {
             .withArgs(wallet.address, token0Amount, token1Amount)
 
         expect(await pair.totalSupply()).to.eq(expectedLiquidity)
-        expect(await pair.balanceOf(wallet.address)).to.eq(expectedLiquidity.sub(MINIMUM_LIQUIDITY))
         expect(await token0.balanceOf(pair.address)).to.eq(token0Amount)
         expect(await token1.balanceOf(pair.address)).to.eq(token1Amount)
+        expect(await pair.balanceOf(wallet.address)).to.eq(expectedLiquidity.sub(MINIMUM_LIQUIDITY))
 
         const reserves = await pair.getReserves()
 
@@ -185,9 +185,12 @@ describe('ArthIncentiveController with test swapping', () => {
             const totalSupplyToken0 = await token0.totalSupply()
             const totalSupplyToken1 = await token1.totalSupply()
 
-            expect(await incentiveToken.balanceOf(wallet.address)).to.lt(oldBalanceOfIncentiveToken);
-            expect(await token0.balanceOf(wallet.address)).to.eq(totalSupplyToken0.sub(token0Amount).sub(swapAmount))
-            expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
+            expect(await incentiveToken.balanceOf(wallet.address))
+                .to.lt(oldBalanceOfIncentiveToken);
+            expect(await token0.balanceOf(wallet.address))
+                .to.eq(totalSupplyToken0.sub(token0Amount).sub(swapAmount))
+            expect(await token1.balanceOf(wallet.address))
+                .to.eq(totalSupplyToken1.sub(token1Amount).add(expectedOutputAmount))
         })
     })
 
