@@ -13,8 +13,6 @@ import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
  * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
  */
 contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
-    uint256 public arthToMahaRate;
-
     /**
      * Constructor.
      */
@@ -24,7 +22,14 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         address _incentiveToken,
         uint256 _rewardPerEpoch,
         uint256 _arthToMahaRate
-    ) public Epoch(60 * 60, block.timestamp, 0) {
+    )
+        public
+        Epoch(
+            6 * 60 * 60, /* 6 hour epochs */
+            block.timestamp,
+            0
+        )
+    {
         pairAddress = _pairAddress;
         protocolTokenAddress = _protocolTokenAddress;
         incentiveToken = IBurnableERC20(_incentiveToken);
@@ -32,16 +37,10 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         rewardPerEpoch = _rewardPerEpoch;
         arthToMahaRate = _arthToMahaRate;
 
-        expectedVolumePerEpoch = 1000 * 1e18;
+        // start expecting $1mn in volume
+        expectedVolumePerEpoch = 1000000 * 1e18;
+        currentVolumPerEpoch = expectedVolumePerEpoch;
         availableRewardThisEpoch = rewardPerEpoch;
-    }
-
-    function updateForEpoch() private {
-        expectedVolumePerEpoch = Math.max(currentVolumPerEpoch, 1);
-        availableRewardThisEpoch = rewardPerEpoch;
-        currentVolumPerEpoch = 0;
-
-        lastExecutedAt = block.timestamp;
     }
 
     function estimatePenaltyToCharge(
@@ -137,7 +136,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         address to
     ) private {
         // capture volume and snapshot it every epoch.
-        if (getCurrentEpoch() >= getNextEpoch()) updateForEpoch();
+        if (getCurrentEpoch() >= getNextEpoch()) _updateForEpoch();
         currentVolumPerEpoch = currentVolumPerEpoch.add(amountOutA).add(amountInA);
 
         // Check if we are selling and if we are blow the target price?
@@ -161,5 +160,13 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
             // If we are buying the main protocol token, then we incentivize the tx sender.
             _incentiviseTrade(amountOutA, to);
         }
+    }
+
+    function _updateForEpoch() private {
+        expectedVolumePerEpoch = Math.max(currentVolumPerEpoch, 1);
+        availableRewardThisEpoch = rewardPerEpoch;
+        currentVolumPerEpoch = 0;
+
+        lastExecutedAt = block.timestamp;
     }
 }

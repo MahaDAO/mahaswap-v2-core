@@ -12,8 +12,8 @@ contract Setters is Getters {
     /**
      * Setters.
      */
-    function setArthToMahaRate(uint256 rate) external onlyOwner {
-        arthToMahaRate = rate;
+    function setArthToMahaRate(uint256 val) external onlyOwner {
+        arthToMahaRate = val;
     }
 
     function setIncentiveToken(address newToken) public onlyOwner {
@@ -21,12 +21,12 @@ contract Setters is Getters {
         incentiveToken = IBurnableERC20(newToken);
     }
 
-    function setPenaltyPrice(uint256 newPenaltyPrice) public onlyOwner {
-        penaltyPrice = newPenaltyPrice;
+    function setPenaltyPrice(uint256 val) public onlyOwner {
+        penaltyPrice = val;
     }
 
-    function setRewardPrice(uint256 newRewardPrice) public onlyOwner {
-        rewardPrice = newRewardPrice;
+    function setRewardPrice(uint256 val) public onlyOwner {
+        rewardPrice = val;
     }
 
     function setTokenAProtocolToken(bool val) public onlyOwner {
@@ -37,11 +37,15 @@ contract Setters is Getters {
         expectedVolumePerEpoch = val;
     }
 
-    function setMahaPerEpoch(uint256 _rewardPerEpoch) public onlyOwner {
-        rewardPerEpoch = _rewardPerEpoch;
+    function setAvailableRewardThisEpoch(uint256 val) public onlyOwner {
+        availableRewardThisEpoch = val;
     }
 
-    function setUseOracle(bool isSet) public onlyOwner {
-        useOracle = isSet;
+    function setMahaPerEpoch(uint256 val) public onlyOwner {
+        rewardPerEpoch = val;
+    }
+
+    function setUseOracle(bool val) public onlyOwner {
+        useOracle = val;
     }
 }
