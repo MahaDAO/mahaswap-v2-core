@@ -1,4 +1,4 @@
 module.exports = [
   // "0x0000000000000000000000000000000000000000"
 ]
-// npx hardhat verify --constructor-args scripts/verify.js 0x6ee5486e6cd36959be533921217a6dad1d3d7673 --network goerli
+// npx hardhat verify --constructor-args scripts/verify.js 0x4a387cea6a6ef6e05fab85d63f219eef8a58b68d --network goerli

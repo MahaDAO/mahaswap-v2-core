@@ -20,7 +20,7 @@ async function main() {
   // Deploy new treasury.
 
   const params = [
-    '0x0000000000000000000000000000000000000000'
+    '0xeccE08c2636820a81FC0c805dBDC7D846636bbc4'
   ]
 
   const factory = await MahaswapV1Factory.connect(operator).deploy(...params);
