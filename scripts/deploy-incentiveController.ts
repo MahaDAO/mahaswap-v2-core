@@ -19,10 +19,10 @@ async function main() {
 
   // Deploy new treasury.
   const params = [
-    '0x38eBdcB14674Ea32c982d7c93CcDf28F06a5c7a6', // pair address
-    '0x7e53072c6ca9104c60362586d9080a22ea366e91', // target token (ARTH)
-    '0x981f0d72650583d4d6961def6c186d84d9e0f2b9', // incentive token (NAHA)
-    "13000000000000000000", // rewardPerHour
+    '0x8c85541cc02e88242cb706f88f0724ea874dfb0e', // pair address
+    '0x5ac2a32bfa475765558cea2a0fe0bf0207d58ca4', // target token (ARTH)
+    '0xcd24efb0f7285cb923cab11a85fbdb1523f10011', // incentive token (NAHA)
+    "250000000000000000000", // rewardPerHour
     "87000000000000000" // ARTH to MAHA price
   ]
 
