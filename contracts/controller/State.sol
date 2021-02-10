@@ -28,9 +28,9 @@ contract State is Ownable {
     IUniswapOracle public uniswapOracle;
 
     // Default price of when reward is to be given.
-    uint256 public rewardPrice = uint256(120).mul(1e16); // ~1.2$
+    uint256 public rewardPrice = uint256(100).mul(1e16); // ~1.2$
     // Default price of when penalty is to be charged.
-    uint256 public penaltyPrice = uint256(120).mul(1e16); // ~0.95$
+    uint256 public penaltyPrice = uint256(100).mul(1e16); // ~0.95$
 
     // Should we use oracle to get diff. price feeds or not.
     bool public useOracle = false;
@@ -43,6 +43,8 @@ contract State is Ownable {
     uint256 public availableRewardThisEpoch = 0;
     uint256 public expectedVolumePerEpoch = 1;
     uint256 public currentVolumPerEpoch = 0;
+
+    uint256 public arthToMahaRate;
 
     /**
      * Modifier.
