@@ -42,8 +42,9 @@ describe('ArthIncentiveController with test swapping', () => {
         controller = fixture.controller
         incentiveToken = fixture.incentiveToken
 
-        await incentiveToken.mint(controller.address, await incentiveToken.balanceOf(wallet.address));
-        await incentiveToken.approve(controller.address, await incentiveToken.balanceOf(wallet.address));
+        const balance = await incentiveToken.balanceOf(wallet.address)
+        await incentiveToken.mint(controller.address, balance);
+        await incentiveToken.approve(controller.address, balance);
     })
 
     it('mint', async () => {
