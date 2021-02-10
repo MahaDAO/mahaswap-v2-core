@@ -25,7 +25,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     )
         public
         Epoch(
-            6 * 60 * 60, /* 6 hour epochs */
+            12 * 60 * 60, /* 12 hour epochs */
             block.timestamp,
             0
         )
