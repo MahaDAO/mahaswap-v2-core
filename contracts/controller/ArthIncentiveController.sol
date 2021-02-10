@@ -119,11 +119,11 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     ) external onlyPair {
         if (isTokenAProtocolToken) {
             // then A is ARTH
-            uint256 price = uint256(reserveA).mul(1e18).div(uint256(reserveB));
+            uint256 price = uint256(reserveB).mul(1e18).div(uint256(reserveA));
             _conductChecks(reserveA, price, amountOutA, amountInA, to);
         } else {
             // then B is ARTH
-            uint256 price = uint256(reserveB).mul(1e18).div(uint256(reserveA));
+            uint256 price = uint256(reserveA).mul(1e18).div(uint256(reserveB));
             _conductChecks(reserveB, price, amountOutB, amountInB, to);
         }
     }
@@ -168,5 +168,9 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         currentVolumPerEpoch = 0;
 
         lastExecutedAt = block.timestamp;
+    }
+
+    function refundIncentiveToken() external onlyOwner {
+        incentiveToken.transfer(msg.sender, incentiveToken.balanceOf(address(this)));
     }
 }
