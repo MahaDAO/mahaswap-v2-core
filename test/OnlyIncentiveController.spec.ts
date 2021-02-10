@@ -14,7 +14,7 @@ chai.use(solidity)
 const overrides = { gasLimit: 9999999 }
 
 
-describe('OnlyIncentiveController', () => {
+describe.only('OnlyIncentiveController', () => {
     const provider = new MockProvider({
         hardfork: 'istanbul',
         mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
@@ -128,7 +128,7 @@ describe('OnlyIncentiveController', () => {
         [
             parseEther('1000000'),  // reserveA for mock Controller contract.
             parseEther('0.60'),  // reserveA for mock Controller contract.
-            parseEther('10000'), // reserveA for mock Controller contract. 
+            parseEther('10000'), // reserveA for mock Controller contract.
             parseEther('0'),  // reserveA for mock Controller contract.
             parseEther('100000'), // Exp. volume in 1hr.
             // Exp reward amount as per excel(this amount taked in directly from excel i.e)
@@ -208,7 +208,7 @@ describe('OnlyIncentiveController', () => {
 
             if (i < 1) {
                 // Value matching error here.
-                // the first one if we look 
+                // the first one if we look
                 // expect(await incentiveToken.balanceOf(wallet.address)
                 // ).to.eq(balanceAfter1Claim);
             } else {

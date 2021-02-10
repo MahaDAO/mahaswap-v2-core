@@ -12,6 +12,10 @@ contract Setters is Getters {
     /**
      * Setters.
      */
+    function setArthToMahaRate(uint256 rate) external onlyOwner {
+        arthToMahaRate = rate;
+    }
+
     function setIncentiveToken(address newToken) public onlyOwner {
         require(newToken != address(0), 'Pair: invalid token');
         incentiveToken = IBurnableERC20(newToken);
@@ -27,6 +31,10 @@ contract Setters is Getters {
 
     function setTokenAProtocolToken(bool val) public onlyOwner {
         isTokenAProtocolToken = val;
+    }
+
+    function setExpectedVolumePerEpoch(uint256 val) public onlyOwner {
+        expectedVolumePerEpoch = val;
     }
 
     function setMahaPerEpoch(uint256 _rewardPerEpoch) public onlyOwner {

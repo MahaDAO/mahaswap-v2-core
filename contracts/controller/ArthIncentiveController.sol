@@ -73,13 +73,6 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
             );
     }
 
-    /**
-     * Mutations.
-     */
-    function setArthToMahaRate(uint256 rate) external onlyOwner {
-        arthToMahaRate = rate;
-    }
-
     function _penalizeTrade(
         uint256 price,
         uint256 sellVolume,
