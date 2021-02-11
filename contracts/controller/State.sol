@@ -7,6 +7,7 @@ import {UQ112x112} from '../libraries/UQ112x112.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 import {IUniswapOracle} from '../interfaces/IUniswapOracle.sol';
 import {Ownable} from '../libraries/Ownable.sol';
+import {IUniswapV2Pair} from '../interfaces/IUniswapV2Pair.sol';
 
 /**
  * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
@@ -17,6 +18,12 @@ contract State is Ownable {
 
     // Token which will be used to charge penalty or reward incentives.
     IBurnableERC20 public incentiveToken;
+
+    // Flag should we consider uniswap liq or not.
+    bool public considerUniswapLiquidity;
+
+    // Default uniswap pair.
+    IUniswapV2Pair uniswapPair;
 
     // Pair that will be using this contract.
     address public pairAddress;

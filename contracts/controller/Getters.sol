@@ -3,6 +3,7 @@
 pragma solidity =0.5.16;
 
 import {State} from './State.sol';
+import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 
 /**
  * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
@@ -17,6 +18,14 @@ contract Getters is State {
         // } catch {
         //     revert('Controller: failed to consult cash price from the oracle');
         // }
+    }
+
+    function getLiquidityInUniswap() public view returns (uint256) {
+        // check if enabled or not
+        if (!considerUniswapLiquidity) return uint256(0);
+
+        // Get the liquidity of cash locked in uniswap pair.
+        return IBurnableERC20(protocolTokenAddress).balanceOf(address(uniswapPair));
     }
 
     // Given an output amount of an asset and pair reserves,

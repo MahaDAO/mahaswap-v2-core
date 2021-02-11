@@ -7,6 +7,7 @@ import {Setters} from './Setters.sol';
 import {IIncentiveController} from '../interfaces/IIncentiveController.sol';
 import {IMahaswapV1Pair} from '../interfaces/IMahaswapV1Pair.sol';
 import {Epoch} from '../Epoch.sol';
+import {IUniswapV2Pair} from '../interfaces/IUniswapV2Pair.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 
 /**
@@ -17,6 +18,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
      * Constructor.
      */
     constructor(
+        address uniswapPairAddress,
         address _pairAddress,
         address _protocolTokenAddress,
         address _incentiveToken,
@@ -30,6 +32,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
             0
         )
     {
+        uniswapPair = IUniswapV2Pair(uniswapPairAddress);
         pairAddress = _pairAddress;
         protocolTokenAddress = _protocolTokenAddress;
         incentiveToken = IBurnableERC20(_incentiveToken);
@@ -54,6 +57,8 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         // % of deviation from target price = (tgt_price - price) / price
         // amountToburn = sellVolume * % of deviation from target price * % of pool * 100
         if (price >= targetPrice) return 0;
+
+        liquidity = liquidity.add(getLiquidityInUniswap());
 
         uint256 percentOfPool = sellVolume.mul(10000).div(liquidity);
         uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
@@ -120,6 +125,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         if (isTokenAProtocolToken) {
             // then A is ARTH
             uint256 price = uint256(reserveB).mul(1e18).div(uint256(reserveA));
+
             _conductChecks(reserveA, price, amountOutA, amountInA, to);
         } else {
             // then B is ARTH

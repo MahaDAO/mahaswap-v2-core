@@ -3,6 +3,7 @@
 pragma solidity =0.5.16;
 
 import {Getters} from './Getters.sol';
+import {IUniswapV2Pair} from '../interfaces/IUniswapV2Pair.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 
 /**
@@ -47,5 +48,13 @@ contract Setters is Getters {
 
     function setUseOracle(bool val) public onlyOwner {
         useOracle = val;
+    }
+
+    function setUniswapPair(address pair) public onlyOwner {
+        uniswapPair = IUniswapV2Pair(pair);
+    }
+
+    function setConsiderUniswapLiquidity(bool val) public onlyOwner {
+        considerUniswapLiquidity = val;
     }
 }
