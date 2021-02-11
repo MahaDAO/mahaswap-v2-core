@@ -33,6 +33,14 @@ contract Setters is Getters {
         isTokenAProtocolToken = val;
     }
 
+    function setRewardMultiplier(uint256 val) public onlyOwner {
+        rewardMultiplier = val;
+    }
+
+    function setPenaltyMultiplier(uint256 val) public onlyOwner {
+        penaltyMultiplier = val;
+    }
+
     function setExpectedVolumePerEpoch(uint256 val) public onlyOwner {
         expectedVolumePerEpoch = val;
     }

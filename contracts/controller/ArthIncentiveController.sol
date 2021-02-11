@@ -39,7 +39,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
 
         // start expecting $1mn in volume
         expectedVolumePerEpoch = 1000000 * 1e18;
-        currentVolumPerEpoch = expectedVolumePerEpoch;
+        currentVolumePerEpoch = expectedVolumePerEpoch;
         availableRewardThisEpoch = rewardPerEpoch;
     }
 
@@ -61,13 +61,13 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
 
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
         // NOTE: multiplication by 100, is removed in the mock controller
-        return sellVolume.mul(feeToCharge).div(10000).mul(arthToMahaRate).div(1e18);
+        return sellVolume.mul(feeToCharge.mul(penaltyMultiplier)).div(10000).mul(arthToMahaRate).div(1e18);
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
         return
             Math.min(
-                buyVolume.mul(rewardPerEpoch).div(expectedVolumePerEpoch),
+                buyVolume.mul(rewardPerEpoch).div(expectedVolumePerEpoch).mul(rewardMultiplier),
                 Math.min(availableRewardThisEpoch, incentiveToken.balanceOf(address(this)))
             );
     }
@@ -136,8 +136,8 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         address to
     ) private {
         // capture volume and snapshot it every epoch.
-        if (getCurrentEpoch() >= getNextEpoch()) _updateForEpoch();
-        currentVolumPerEpoch = currentVolumPerEpoch.add(amountOutA).add(amountInA);
+        if (getCurrentEpoch() >= getNextEpoch() && getNextEpoch() > 0) _updateForEpoch();
+        currentVolumePerEpoch = currentVolumePerEpoch.add(amountOutA).add(amountInA);
 
         // Check if we are selling and if we are blow the target price?
         if (amountInA > 0) {
@@ -163,10 +163,9 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     }
 
     function _updateForEpoch() private {
-        expectedVolumePerEpoch = Math.max(currentVolumPerEpoch, 1);
+        expectedVolumePerEpoch = Math.max(currentVolumePerEpoch, 1);
         availableRewardThisEpoch = rewardPerEpoch;
-        currentVolumPerEpoch = 0;
-
+        currentVolumePerEpoch = minimumVolumePerEpoch;
         lastExecutedAt = block.timestamp;
     }
 
