@@ -57,7 +57,10 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
 
         uint256 percentOfPool = sellVolume.mul(10000).div(liquidity);
         uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
-        uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget).mul(penaltyMultiplier); // a number from 0-100%
+
+        // Can 2x or 3x rewards.
+        // A number from 0-100%.
+        uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget).mul(penaltyMultiplier);
 
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
         // NOTE: multiplication by 100, is removed in the mock controller
@@ -71,7 +74,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
                 buyVolume.mul(rewardPerEpoch).div(expectedVolumePerEpoch),
                 Math.min(availableRewardThisEpoch, incentiveToken.balanceOf(address(this)))
             )
-                .mul(rewardMultiplier);
+                .mul(rewardMultiplier); // Can 2x or 3x rewards.
     }
 
     function _penalizeTrade(
@@ -173,12 +176,12 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     }
 
     function _updateForEpoch() private {
-        expectedVolumePerEpoch = Math.max(currentVolumPerEpoch, 1);
+        // This way if the curr. volume is 0 and we set expVolumePerEpoch to currentVolumePerEpoch or
+        // minVolumePerEpoch we expect.
+        expectedVolumePerEpoch = Math.max(currentVolumPerEpoch, minVolumePerEpoch);
         availableRewardThisEpoch = rewardPerEpoch;
-        // Here we set the currentVolumePerEpoch for the new epoch to atleast minVolumePerEpoch.
-        // This way if the volume is 0 and we reach the next epoch(epoch after the new epoch) we
-        // set expVolumePerEpoch to currentVolumePerEpoch or 1.
-        currentVolumPerEpoch = minVolumePerEpoch;
+        // Here we set the currentVolumePerEpoch for the new epoch to 0.
+        currentVolumPerEpoch = 0;
 
         lastExecutedAt = block.timestamp;
     }
