@@ -16,6 +16,24 @@ contract Setters is Getters {
         arthToMahaRate = val;
     }
 
+    function setPenaltyToBurn(uint256 percent) public onlyOwner {
+        require(percent > 0 && percent < 100, 'Controller: invalid %');
+
+        penaltyToBurn = percent;
+    }
+
+    function setPenaltyToRedirect(uint256 percent) public onlyOwner {
+        require(percent > 0 && percent < 100, 'Controller: invalid %');
+
+        penaltyToRedirect = percent;
+    }
+
+    function setPenaltyToKeep(uint256 percent) public onlyOwner {
+        require(percent > 0 && percent < 100, 'Controller: invalid %');
+
+        penaltyToKeep = percent;
+    }
+
     function setEcosystemFund(address fund) external onlyOwner {
         ecosystemFund = fund;
     }

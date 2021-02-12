@@ -54,7 +54,7 @@ contract State is Ownable {
     // Percentage of penalty to be redirected to diff. funds(currently ecosystem fund).
     uint256 public penaltyToRedirect = uint256(10); // In %.
 
-    uint256 public minVolumePerEpoch = 1e18; // Min. amount of reward per epoch.
+    uint256 public minVolumePerEpoch = 1e18; // Min. amount of volume to consider per epoch.
     uint256 public availableRewardThisEpoch = 0;
     uint256 public expectedVolumePerEpoch = 1;
     uint256 public currentVolumPerEpoch = 0;
