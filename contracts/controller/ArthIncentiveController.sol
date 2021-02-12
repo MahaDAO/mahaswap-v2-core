@@ -58,13 +58,13 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         uint256 percentOfPool = sellVolume.mul(10000).div(liquidity);
         uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
 
-        // Can 2x or 3x rewards.
         // A number from 0-100%.
-        uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget).mul(penaltyMultiplier);
+        uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget);
 
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
         // NOTE: multiplication by 100, is removed in the mock controller
-        return sellVolume.mul(feeToCharge).div(10000).mul(arthToMahaRate).div(1e18);
+        // Can 2x, 3x, ... the penalty.
+        return sellVolume.mul(feeToCharge).div(10000).mul(arthToMahaRate).div(1e18).mul(penaltyMultiplier);
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
