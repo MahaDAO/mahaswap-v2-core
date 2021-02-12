@@ -12,6 +12,14 @@ contract Setters is Getters {
     /**
      * Setters.
      */
+    function setMinVolumePerEpoch(uint256 val) external onlyOwner {
+        minimumVolumePerEpoch = val;
+    }
+
+    function setCurrentVolumePerEpoch(uint256 val) external onlyOwner {
+        currentVolumePerEpoch = val;
+    }
+
     function setArthToMahaRate(uint256 val) external onlyOwner {
         arthToMahaRate = val;
     }
