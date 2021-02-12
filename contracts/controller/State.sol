@@ -40,6 +40,10 @@ contract State is Ownable {
     // Max. reward per hour to be given out.
     uint256 public rewardPerEpoch = 0;
 
+    // Multipiler for rewards and penalty.
+    uint public rewardMultiplier = 1;
+    uint public penaltyMultiplier = 1;
+
     uint256 public availableRewardThisEpoch = 0;
     uint256 public expectedVolumePerEpoch = 1;
     uint256 public currentVolumPerEpoch = 0;

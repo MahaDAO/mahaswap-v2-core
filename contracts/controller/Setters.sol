@@ -16,6 +16,14 @@ contract Setters is Getters {
         arthToMahaRate = val;
     }
 
+    function setRewardsMultiplier(uint256 multiplier) external onlyOwner {
+        rewardMultiplier = multiplier;
+    }
+
+    function setPenaltyMultiplier(uint256 multiplier) external onlyOwner {
+        penaltyMultiplier = multiplier;
+    }
+
     function setIncentiveToken(address newToken) public onlyOwner {
         require(newToken != address(0), 'Pair: invalid token');
         incentiveToken = IBurnableERC20(newToken);

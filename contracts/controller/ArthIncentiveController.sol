@@ -57,7 +57,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
 
         uint256 percentOfPool = sellVolume.mul(10000).div(liquidity);
         uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
-        uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget); // a number from 0-100%
+        uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget).mul(penaltyMultiplier); // a number from 0-100%
 
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
         // NOTE: multiplication by 100, is removed in the mock controller
@@ -69,7 +69,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
             Math.min(
                 buyVolume.mul(rewardPerEpoch).div(expectedVolumePerEpoch),
                 Math.min(availableRewardThisEpoch, incentiveToken.balanceOf(address(this)))
-            );
+            ).mul(rewardMultiplier);
     }
 
     function _penalizeTrade(
