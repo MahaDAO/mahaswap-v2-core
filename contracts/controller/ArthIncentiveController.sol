@@ -19,6 +19,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     constructor(
         address _pairAddress,
         address _protocolTokenAddress,
+        address _ecosystemFund,
         address _incentiveToken,
         uint256 _rewardPerEpoch,
         uint256 _arthToMahaRate
@@ -31,6 +32,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         )
     {
         pairAddress = _pairAddress;
+        ecosystemFund = _ecosystemFund;
         protocolTokenAddress = _protocolTokenAddress;
         incentiveToken = IBurnableERC20(_incentiveToken);
         isTokenAProtocolToken = IMahaswapV1Pair(_pairAddress).token0() == _protocolTokenAddress;
