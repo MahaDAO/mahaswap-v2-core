@@ -69,12 +69,11 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
         return
-            Math
-                .min(
-                buyVolume.mul(rewardPerEpoch).div(expectedVolumePerEpoch),
+            Math.min(
+                // Can 2x, 3x, ... the rewards.
+                buyVolume.mul(rewardPerEpoch).div(expectedVolumePerEpoch).mul(rewardMultiplier),
                 Math.min(availableRewardThisEpoch, incentiveToken.balanceOf(address(this)))
-            )
-                .mul(rewardMultiplier); // Can 2x or 3x rewards.
+            );
     }
 
     function _penalizeTrade(
