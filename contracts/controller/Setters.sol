@@ -16,6 +16,10 @@ contract Setters is Getters {
         arthToMahaRate = val;
     }
 
+    function setEcosystemFund(address fund) external onlyOwner {
+        ecosystemFund = fund;
+    }
+
     function setMinVolumePerEpoch(uint256 volume) public onlyOwner {
         minVolumePerEpoch = volume;
     }

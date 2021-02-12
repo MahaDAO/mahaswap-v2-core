@@ -24,6 +24,9 @@ contract State is Ownable {
     // Token which is the main token of a protocol.
     address public protocolTokenAddress;
 
+    // A fraction of penalty is being used to fund the ecosystem.
+    address ecosystemFund;
+
     // Used to track the latest twap price.
     IUniswapOracle public uniswapOracle;
 
@@ -43,6 +46,13 @@ contract State is Ownable {
     // Multipiler for rewards and penalty.
     uint256 public rewardMultiplier = 1;
     uint256 public penaltyMultiplier = 1;
+
+    // Percentage of penalty to be burnt from the token's supply.
+    uint256 public penaltyToBurn = uint256(45); // In %.
+    // Percentage of penalty to be kept inside this contract to act as fund for rewards.
+    uint256 public penaltyToKeep = uint256(45); // In %.
+    // Percentage of penalty to be redirected to diff. funds(currently ecosystem fund).
+    uint256 public penaltyToRedirect = uint256(10); // In %.
 
     uint256 public minVolumePerEpoch = 1e18; // Min. amount of reward per epoch.
     uint256 public availableRewardThisEpoch = 0;

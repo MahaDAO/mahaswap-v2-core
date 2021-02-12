@@ -80,12 +80,17 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         uint256 liquidity,
         address to
     ) private {
-        uint256 amountToBurn = estimatePenaltyToCharge(price, liquidity, sellVolume);
+        uint256 amountToPenalize = estimatePenaltyToCharge(price, liquidity, sellVolume);
 
-        if (amountToBurn > 0) {
+        if (amountToPenalize > 0) {
             // NOTE: amount has to be approved from frontend.
-            // Burn and charge penalty.
-            incentiveToken.burnFrom(to, amountToBurn);
+
+            // Burn and charge a fraction of the penalty.
+            incentiveToken.burnFrom(to, amountToPenalize.mul(penaltyToBurn).div(100));
+            // Keep a fraction of the penalty as funds for paying out rewards.
+            incentiveToken.transferFrom(to, address(this), amountToPenalize.mul(penaltyToKeep).div(100));
+            // Send a fraction of the penalty to fund the ecosystem.
+            incentiveToken.transferFrom(to, ecosystemFund, amountToPenalize.mul(penaltyToRedirect).div(100));
         }
     }
 
