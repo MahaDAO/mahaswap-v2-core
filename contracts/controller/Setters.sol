@@ -16,11 +16,15 @@ contract Setters is Getters {
         arthToMahaRate = val;
     }
 
-    function setRewardsMultiplier(uint256 multiplier) external onlyOwner {
+    function setMinVolumePerEpoch(uint256 volume) public onlyOwner {
+        minVolumePerEpoch = volume;
+    }
+
+    function setRewardMultiplier(uint256 multiplier) public onlyOwner {
         rewardMultiplier = multiplier;
     }
 
-    function setPenaltyMultiplier(uint256 multiplier) external onlyOwner {
+    function setPenaltyMultiplier(uint256 multiplier) public onlyOwner {
         penaltyMultiplier = multiplier;
     }
 

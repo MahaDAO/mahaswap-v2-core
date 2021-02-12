@@ -170,7 +170,8 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     function _updateForEpoch() private {
         expectedVolumePerEpoch = Math.max(currentVolumPerEpoch, 1);
         availableRewardThisEpoch = rewardPerEpoch;
-        currentVolumPerEpoch = 0;
+        // Here we set the currentVolumePerEpoch for the new epoch to atleast minVolumePerEpoch.
+        currentVolumPerEpoch = minVolumePerEpoch;
 
         lastExecutedAt = block.timestamp;
     }

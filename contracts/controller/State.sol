@@ -41,9 +41,10 @@ contract State is Ownable {
     uint256 public rewardPerEpoch = 0;
 
     // Multipiler for rewards and penalty.
-    uint public rewardMultiplier = 1;
-    uint public penaltyMultiplier = 1;
+    uint256 public rewardMultiplier = 1;
+    uint256 public penaltyMultiplier = 1;
 
+    uint256 public minVolumePerEpoch = 1e18; // Min. amount of reward per epoch.
     uint256 public availableRewardThisEpoch = 0;
     uint256 public expectedVolumePerEpoch = 1;
     uint256 public currentVolumPerEpoch = 0;
