@@ -66,10 +66,12 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
         return
-            Math.min(
+            Math
+                .min(
                 buyVolume.mul(rewardPerEpoch).div(expectedVolumePerEpoch),
                 Math.min(availableRewardThisEpoch, incentiveToken.balanceOf(address(this)))
-            ).mul(rewardMultiplier);
+            )
+                .mul(rewardMultiplier);
     }
 
     function _penalizeTrade(
@@ -137,7 +139,6 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     ) private {
         // capture volume and snapshot it every epoch.
         if (getCurrentEpoch() >= getNextEpoch()) _updateForEpoch();
-        currentVolumPerEpoch = currentVolumPerEpoch.add(amountOutA).add(amountInA);
 
         // Check if we are selling and if we are blow the target price?
         if (amountInA > 0) {
@@ -156,6 +157,10 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
 
         // Check if we are buying and below the target price
         if (amountOutA > 0 && priceA < getRewardIncentivePrice() && availableRewardThisEpoch > 0) {
+            // Volume of epoch is only considered while giving rewards, not while penalizing.
+            // We also consider only buy volume, while buying.
+            currentVolumPerEpoch = currentVolumPerEpoch.add(amountOutA);
+
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
             _incentiviseTrade(amountOutA, to);
