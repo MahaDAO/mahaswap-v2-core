@@ -118,6 +118,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         address to
     ) external onlyPair {
         if (isTokenAProtocolToken) {
+            if (amountOutA == 0) {}
             // then A is ARTH
             uint256 price = uint256(reserveB).mul(1e18).div(uint256(reserveA));
             _conductChecks(reserveA, price, amountOutA, amountInA, to);
@@ -132,7 +133,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         uint112 reserveA, // ARTH liquidity
         uint256 priceA, // ARTH price
         uint256 amountOutA, // ARTH being bought
-        uint256 amountInA, // ARTH being sold
+        uint256 amountInA, // ARTH being sold 10000000000000000000000
         address to
     ) private {
         // capture volume and snapshot it every epoch.
