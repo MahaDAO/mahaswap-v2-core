@@ -340,8 +340,7 @@ describe.only('OnlyIncentiveController', () => {
           await incentiveToken.balanceOf(wallet.address)
         ).to.gt(balanceAfter1Claim);
 
-        // NOT sure about this line.
-        expect(await incentiveToken.balanceOf(wallet.address)).to.gte(rewardWith1x[i][1].mul(2))
+        expect((await incentiveToken.balanceOf(wallet.address)).sub(balanceAfter1Claim)).to.eq(rewardWith1x[i][1].mul(2))
       })
     })
   })
