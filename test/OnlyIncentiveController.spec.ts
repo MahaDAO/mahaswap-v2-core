@@ -110,6 +110,9 @@ describe.only('OnlyIncentiveController', () => {
     await controller.connect(wallet).setEcosystemFund(other.address)
   })
 
+  let rewardWith1x: any[] = [];
+  let penaltiesWith1x: any[] = [];
+
   describe('Sell', () => {
     sellCases.forEach((testCase, i) => {
       it(`conductChecks:penalty:${i}`, async () => {
@@ -158,6 +161,8 @@ describe.only('OnlyIncentiveController', () => {
         // expect(
         //   oldBalance.sub(await incentiveToken.balanceOf(wallet.address)).div(100)
         // ).to.eq(testCase[testCase.length - 1])
+
+        penaltiesWith1x.push(penaltyCharged);
       })
     })
   })
@@ -210,7 +215,133 @@ describe.only('OnlyIncentiveController', () => {
 
         expect(
           await incentiveToken.balanceOf(wallet.address)
-        ).to.eq(balanceAfter1Claim.add(balanceAfter1Claim.sub(oldBalance)));
+        ).to.gt(balanceAfter1Claim);
+
+        rewardWith1x.push(
+          [balanceAfter1Claim.sub(oldBalance), (await incentiveToken.balanceOf(wallet.address)).sub(balanceAfter1Claim)]
+        )
+      })
+    })
+  })
+
+  describe('Sell, penalty 2x', () => {
+    sellCases.forEach((testCase, i) => {
+      beforeEach(async () => {
+        await controller.connect(wallet).setPenaltyMultiplier(2);
+      })
+
+      it(`conductChecks:penalty:${i}`, async () => {
+        await controller.setPenaltyPrice(expandTo18Decimals(1));
+        await controller.setIncentiveToken(incentiveToken.address);
+
+        // Here, other is treated as an ecosystem fund.
+        const oldBalance = await incentiveToken.balanceOf(wallet.address)
+        const oldFundBalance = await incentiveToken.balanceOf(other.address)
+        const oldControllerBalance = await incentiveToken.balanceOf(controller.address)
+
+        await incentiveToken.approve(controller.address, oldBalance);
+
+        await controller.conductChecks(
+          testCase[0],
+          testCase[1],
+          testCase[2],
+          testCase[3],
+          wallet.address
+        )
+
+        expect(
+          await incentiveToken.balanceOf(wallet.address)
+        ).to.lt(oldBalance);
+        expect(
+          await incentiveToken.balanceOf(other.address)
+        ).to.gt(oldFundBalance);
+        expect(
+          await incentiveToken.balanceOf(controller.address)
+        ).to.gt(oldControllerBalance);
+
+        const penaltyCharged = oldBalance.sub(await incentiveToken.balanceOf(wallet.address))
+
+        const expectedControllerBalance = penaltyCharged.mul(await controller.penaltyToKeep()).div(100);
+        const expectedFundBalance = penaltyCharged.mul(await controller.penaltyToRedirect()).div(100);
+
+        expect(
+          await incentiveToken.balanceOf(other.address)
+        ).to.eq(oldFundBalance.add(expectedFundBalance));
+        expect(
+          await incentiveToken.balanceOf(controller.address)
+        ).to.eq(oldControllerBalance.add(expectedControllerBalance));
+
+        expect(penaltyCharged).to.eq(penaltiesWith1x[i].mul(2));
+
+        // console.log(`Sell:case:${i}`, penaltyCharged.toString());
+
+        // expect(
+        //   oldBalance.sub(await incentiveToken.balanceOf(wallet.address)).div(100)
+        // ).to.eq(testCase[testCase.length - 1])
+      })
+    })
+  })
+
+  describe('Buy reward 2x', () => {
+    beforeEach(async () => {
+      await controller.connect(wallet).setRewardMultiplier(2);
+    })
+
+    buyCases.forEach((testCase, i) => {
+      it(`conductChecks:reward:${i}`, async () => {
+        await controller.setExpVolumePerHour(testCase[testCase.length - 2]);
+
+        await controller.setPenaltyPrice(expandTo18Decimals(1));
+        await controller.setIncentiveToken(incentiveToken.address);
+
+        await incentiveToken.transfer(controller.address, await incentiveToken.balanceOf(wallet.address));
+        const oldBalance = await incentiveToken.balanceOf(wallet.address);
+
+        await incentiveToken.approve(controller.address, oldBalance);
+
+        await controller.conductChecks(
+          testCase[0],
+          testCase[1],
+          testCase[2],
+          testCase[3],
+          wallet.address
+        )
+
+        const balanceAfter1Claim = await incentiveToken.balanceOf(wallet.address)
+
+        // expect(balanceAfter1Claim.sub(oldBalance)).to.gt(rewardWith1x[i][0].mul(15).div(10))
+        // expect(balanceAfter1Claim.sub(oldBalance)).to.lt(rewardWith1x[i][0].mul(25).div(10))
+        expect(balanceAfter1Claim.sub(oldBalance)).to.eq(rewardWith1x[i][0].mul(2))
+
+        expect(
+          balanceAfter1Claim
+        ).to.gt(oldBalance);
+
+        // We use <= since, there can be precision issues in the excel file.
+        expect(
+          balanceAfter1Claim.sub(oldBalance)
+        ).to.lte(testCase[testCase.length - 1]);
+
+        // console.log(
+        //   `Buy:case:${i}`, (await incentiveToken.balanceOf(wallet.address)).sub(oldBalance).toString()
+        // );
+
+        // console.log(balanceAfter1Claim.sub(oldBalance).toString());
+
+        await controller.conductChecks(
+          testCase[0],
+          testCase[1],
+          testCase[2],
+          testCase[3],
+          wallet.address
+        )
+
+        expect(
+          await incentiveToken.balanceOf(wallet.address)
+        ).to.gt(balanceAfter1Claim);
+
+        // NOT sure about this line.
+        expect(await incentiveToken.balanceOf(wallet.address)).to.gte(rewardWith1x[i][1].mul(2))
       })
     })
   })
