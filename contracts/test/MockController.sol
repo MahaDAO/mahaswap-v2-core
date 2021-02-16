@@ -22,6 +22,9 @@ contract MockController is Epoch {
     // Token which will be used to charge penalty or reward incentives.
     IBurnableERC20 public token;
 
+    // A fraction of penalty is being used to fund the ecosystem.
+    address ecosystemFund;
+
     // Used to track the latest twap price.
     IUniswapOracle public uniswapOracle;
 
@@ -32,6 +35,19 @@ contract MockController is Epoch {
 
     // Should we use oracle to get diff. price feeds or not.
     bool public useOracle = false;
+
+    // Multipiler for rewards and penalty.
+    uint256 public rewardMultiplier = 1;
+    uint256 public penaltyMultiplier = 1;
+
+    uint256 public minVolumePerHour = 1e18; // Min. amount of volume to consider per epoch.
+
+    // Percentage of penalty to be burnt from the token's supply.
+    uint256 public penaltyToBurn = uint256(45); // In %.
+    // Percentage of penalty to be kept inside this contract to act as fund for rewards.
+    uint256 public penaltyToKeep = uint256(45); // In %.
+    // Percentage of penalty to be redirected to diff. funds(currently ecosystem fund).
+    uint256 public penaltyToRedirect = uint256(10); // In %.
 
     // Max. reward per hour to be given out.
     // as per the value in excel sheet.
@@ -105,20 +121,62 @@ contract MockController is Epoch {
 
         uint256 percentOfPool = sellVolume.mul(10000).div(liquidity);
         uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
-        uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget); // a number from 0-100%
+
+        // A number from 0-100%.
+        uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget);
 
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
         // NOTE: multiplication by 100, is removed in the mock controller
-        return sellVolume.mul(feeToCharge).div(10000).mul(arthToMahaRate).div(1e18);
+        // Can 2x, 3x, ... the penalty.
+        return sellVolume.mul(feeToCharge).div(10000).mul(arthToMahaRate).div(1e18).mul(penaltyMultiplier);
     }
 
     function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
-        return Math.min(buyVolume.mul(rewardPerHour).div(expectedVolumePerHour), availableRewardThisHour);
+        return
+            Math.min(
+                // Can 2x, 3x, ... the rewards.
+                buyVolume.mul(rewardPerHour).div(expectedVolumePerHour).mul(rewardMultiplier),
+                Math.min(availableRewardThisHour, token.balanceOf(address(this)))
+            );
     }
 
     /**
      * Setters.
      */
+
+    function setPenaltyToBurn(uint256 percent) public onlyOwner {
+        require(percent > 0 && percent < 100, 'Controller: invalid %');
+
+        penaltyToBurn = percent;
+    }
+
+    function setPenaltyToRedirect(uint256 percent) public onlyOwner {
+        require(percent > 0 && percent < 100, 'Controller: invalid %');
+
+        penaltyToRedirect = percent;
+    }
+
+    function setPenaltyToKeep(uint256 percent) public onlyOwner {
+        require(percent > 0 && percent < 100, 'Controller: invalid %');
+
+        penaltyToKeep = percent;
+    }
+
+    function setEcosystemFund(address fund) external onlyOwner {
+        ecosystemFund = fund;
+    }
+
+    function setMinVolumePerEpoch(uint256 volume) public onlyOwner {
+        minVolumePerHour = volume;
+    }
+
+    function setRewardMultiplier(uint256 multiplier) public onlyOwner {
+        rewardMultiplier = multiplier;
+    }
+
+    function setPenaltyMultiplier(uint256 multiplier) public onlyOwner {
+        penaltyMultiplier = multiplier;
+    }
 
     function setArthToMahaRate(uint256 rate) public {
         arthToMahaRate = rate;
@@ -174,12 +232,17 @@ contract MockController is Epoch {
         uint256 liquidity,
         address to
     ) private {
-        uint256 amountToBurn = estimatePenaltyToCharge(price, liquidity, sellVolume);
+        uint256 amountToPenalize = estimatePenaltyToCharge(price, liquidity, sellVolume);
 
-        if (amountToBurn > 0) {
+        if (amountToPenalize > 0) {
             // NOTE: amount has to be approved from frontend.
-            // Burn and charge penalty.
-            token.burnFrom(to, amountToBurn);
+
+            // Burn and charge a fraction of the penalty.
+            token.burnFrom(to, amountToPenalize.mul(penaltyToBurn).div(100));
+            // Keep a fraction of the penalty as funds for paying out rewards.
+            token.transferFrom(to, address(this), amountToPenalize.mul(penaltyToKeep).div(100));
+            // Send a fraction of the penalty to fund the ecosystem.
+            token.transferFrom(to, ecosystemFund, amountToPenalize.mul(penaltyToRedirect).div(100));
         }
     }
 
@@ -191,7 +254,7 @@ contract MockController is Epoch {
             availableRewardThisHour = availableRewardThisHour.sub(amountToReward);
 
             // Send reward to the appropriate address.
-            if (token.balanceOf(address(this)) >= amountToReward) token.transfer(to, amountToReward);
+            token.transfer(to, amountToReward);
         }
     }
 
@@ -211,6 +274,17 @@ contract MockController is Epoch {
         _conductChecks(reserveA, price, amountOutA, amountInA, to);
     }
 
+    function _updateForEpoch() private {
+        // This way if the curr. volume is 0 and we set expVolumePerEpoch to currentVolumePerEpoch or
+        // minVolumePerHour we expect.
+        expectedVolumePerHour = Math.max(currentVolumPerHour, minVolumePerHour);
+        availableRewardThisHour = rewardPerHour;
+        // Here we set the currentVolumePerEpoch for the new epoch to 0.
+        currentVolumPerHour = 0;
+
+        lastExecutedAt = block.timestamp;
+    }
+
     function _conductChecks(
         uint112 reserveA, // ARTH liquidity
         uint256 priceA, // ARTH price
@@ -218,9 +292,8 @@ contract MockController is Epoch {
         uint256 amountInA, // ARTH being sold
         address to
     ) private {
-        // capture volume and snapshot it every hour
-        if (getCurrentEpoch() >= getNextEpoch()) updateForEpoch();
-        currentVolumPerHour = currentVolumPerHour.add(amountOutA).add(amountInA);
+        /// capture volume and snapshot it every epoch.
+        if (getCurrentEpoch() >= getNextEpoch()) _updateForEpoch();
 
         // Check if we are selling and if we are blow the target price?
         if (amountInA > 0) {
@@ -239,6 +312,10 @@ contract MockController is Epoch {
 
         // Check if we are buying and below the target price
         if (amountOutA > 0 && priceA < getRewardIncentivePrice() && availableRewardThisHour > 0) {
+            // Volume of epoch is only considered while giving rewards, not while penalizing.
+            // We also consider only buy volume, while buying.
+            currentVolumPerHour = currentVolumPerHour.add(amountOutA);
+
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
             _incentiviseTrade(amountOutA, to);
