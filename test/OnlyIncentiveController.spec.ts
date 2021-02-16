@@ -49,7 +49,7 @@ const sellCases: any[][] = [
     parseEther('1')
   ],
   [
-    parseEther('10000000'),
+    parseEther('100000000'),
     parseEther('0.90'),
     parseEther('0'),
     parseEther('10000'),
@@ -87,7 +87,7 @@ const buyCases: any[][] = [
     parseEther('10000'),
     parseEther('0'),
     parseEther('20000000'),
-    parseEther(`${1.389 / 40}`)
+    parseEther(`${1.389 / 400}`)
   ],
 ]
 
@@ -153,7 +153,7 @@ describe.only('OnlyIncentiveController', () => {
           await incentiveToken.balanceOf(controller.address)
         ).to.eq(oldControllerBalance.add(expectedControllerBalance));
 
-        console.log(`Sell:case:${i}`, penaltyCharged.toString());
+        // console.log(`Sell:case:${i}`, penaltyCharged.toString());
 
         // expect(
         //   oldBalance.sub(await incentiveToken.balanceOf(wallet.address)).div(100)
@@ -194,9 +194,11 @@ describe.only('OnlyIncentiveController', () => {
           balanceAfter1Claim.sub(oldBalance)
         ).to.lte(testCase[testCase.length - 1]);
 
-        console.log(
-          `Buy:case:${i}`, (await incentiveToken.balanceOf(wallet.address)).sub(oldBalance).toString()
-        );
+        // console.log(
+        //   `Buy:case:${i}`, (await incentiveToken.balanceOf(wallet.address)).sub(oldBalance).toString()
+        // );
+
+        // console.log(balanceAfter1Claim.sub(oldBalance).toString());
 
         await controller.conductChecks(
           testCase[0],
@@ -206,16 +208,9 @@ describe.only('OnlyIncentiveController', () => {
           wallet.address
         )
 
-        // if (i < 1) {
-        //   // Value matching error here.
-        //   // the first one if we look
-        //   expect(await incentiveToken.balanceOf(wallet.address)
-        //   ).to.eq(balanceAfter1Claim);
-        // } else {
-        //   expect(
-        //     await incentiveToken.balanceOf(wallet.address)
-        //   ).to.gt(balanceAfter1Claim);
-        // }
+        expect(
+          await incentiveToken.balanceOf(wallet.address)
+        ).to.eq(balanceAfter1Claim.add(balanceAfter1Claim.sub(oldBalance)));
       })
     })
   })

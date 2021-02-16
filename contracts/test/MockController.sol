@@ -51,7 +51,7 @@ contract MockController is Epoch {
 
     // Max. reward per hour to be given out.
     // as per the value in excel sheet.
-    uint256 public rewardPerHour = uint256(6944000000000000000);
+    uint256 public rewardPerHour = uint256(694400000000000000);
 
     uint256 arthToMahaRate = 1 * 1e18;
 
