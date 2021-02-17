@@ -20,7 +20,7 @@ contract MockController is Epoch {
      */
 
     // Token which will be used to charge penalty or reward incentives.
-    IBurnableERC20 public token;
+    IBurnableERC20 public incentiveToken;
 
     // A fraction of penalty is being used to fund the ecosystem.
     address ecosystemFund;
@@ -29,18 +29,16 @@ contract MockController is Epoch {
     IUniswapOracle public uniswapOracle;
 
     // Default price of when reward is to be given.
-    uint256 public rewardPrice = uint256(120).mul(1e16); // ~1.2$
+    uint256 public rewardPrice = uint256(110).mul(1e16); // ~1.2$
     // Default price of when penalty is to be charged.
-    uint256 public penaltyPrice = uint256(95).mul(1e16); // ~0.95$
+    uint256 public penaltyPrice = uint256(110).mul(1e16); // ~0.95$
 
     // Should we use oracle to get diff. price feeds or not.
     bool public useOracle = false;
 
     // Multipiler for rewards and penalty.
-    uint256 public rewardMultiplier = 1;
-    uint256 public penaltyMultiplier = 1;
-
-    uint256 public minVolumePerHour = 1e18; // Min. amount of volume to consider per epoch.
+    uint256 public rewardMultiplier = 100000;
+    uint256 public penaltyMultiplier = 100000;
 
     // Percentage of penalty to be burnt from the token's supply.
     uint256 public penaltyToBurn = uint256(45); // In %.
@@ -50,14 +48,14 @@ contract MockController is Epoch {
     uint256 public penaltyToRedirect = uint256(10); // In %.
 
     // Max. reward per hour to be given out.
-    // as per the value in excel sheet.
-    uint256 public rewardPerHour = uint256(694400000000000000);
+    uint256 public rewardPerEpoch = 0;
 
     uint256 arthToMahaRate = 1 * 1e18;
 
-    uint256 public availableRewardThisHour = 0;
-    uint256 public expectedVolumePerHour = 0;
-    uint256 public currentVolumPerHour = 0;
+    // The reward which can be given out during this epoch.
+    uint256 public availableRewardThisEpoch = 0;
+    // The reward which has been collected through the penalities.
+    uint256 public rewardCollectedFromPenalties = 0;
 
     /**
      * Constructor.
@@ -128,16 +126,31 @@ contract MockController is Epoch {
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
         // NOTE: multiplication by 100, is removed in the mock controller
         // Can 2x, 3x, ... the penalty.
-        return sellVolume.mul(feeToCharge).div(10000).mul(arthToMahaRate).div(1e18).mul(penaltyMultiplier);
+        return sellVolume.mul(feeToCharge).mul(arthToMahaRate).mul(penaltyMultiplier).div(10000 * 100000 * 1e18);
     }
 
-    function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
-        return
-            Math.min(
-                // Can 2x, 3x, ... the rewards.
-                buyVolume.mul(rewardPerHour).div(expectedVolumePerHour).mul(rewardMultiplier),
-                Math.min(availableRewardThisHour, token.balanceOf(address(this)))
-            );
+    function estimateRewardToGive(
+        uint256 price,
+        uint256 liquidity,
+        uint256 buyVolume
+    ) public view returns (uint256) {
+        uint256 targetPrice = getRewardIncentivePrice();
+
+        // % of pool = buyVolume / liquidity
+        // % of deviation from target price = (tgt_price - price) / price
+        // rewardToGive = buyVolume * % of deviation from target price * % of pool * 100
+        if (price >= targetPrice) return 0;
+
+        uint256 percentOfPool = buyVolume.mul(10000).div(liquidity);
+        uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
+
+        // A number from 0-100%.
+        uint256 rewardToGive = Math.min(percentOfPool, deviationFromTarget);
+
+        uint256 calculatedRewards =
+            rewardPerEpoch.mul(rewardToGive).mul(arthToMahaRate).mul(rewardMultiplier).div(10000 * 100000 * 1e18);
+
+        return Math.min(availableRewardThisEpoch, calculatedRewards);
     }
 
     /**
@@ -166,10 +179,6 @@ contract MockController is Epoch {
         ecosystemFund = fund;
     }
 
-    function setMinVolumePerEpoch(uint256 volume) public onlyOwner {
-        minVolumePerHour = volume;
-    }
-
     function setRewardMultiplier(uint256 multiplier) public onlyOwner {
         rewardMultiplier = multiplier;
     }
@@ -184,7 +193,7 @@ contract MockController is Epoch {
 
     function setIncentiveToken(address newToken) public {
         require(newToken != address(0), 'Pair: invalid token');
-        token = IBurnableERC20(newToken);
+        incentiveToken = IBurnableERC20(newToken);
     }
 
     function setPenaltyPrice(uint256 newPenaltyPrice) public {
@@ -195,8 +204,8 @@ contract MockController is Epoch {
         rewardPrice = newRewardPrice;
     }
 
-    function setMahaPerHour(uint256 _rewardPerHour) public {
-        rewardPerHour = _rewardPerHour;
+    function setMahaPerEpoch(uint256 _rewardPerEpoch) public {
+        rewardPerEpoch = _rewardPerEpoch;
     }
 
     function setUniswapOracle(address newUniswapOracle) public {
@@ -207,20 +216,21 @@ contract MockController is Epoch {
         useOracle = isSet;
     }
 
-    function setExpVolumePerHour(uint256 amount) public {
-        expectedVolumePerHour = amount;
+    function _updateForEpoch() private {
+        // Get if there's reward left from previous epoch.
+        uint256 rewardLeftFromPreviousEpoch = availableRewardThisEpoch;
+        availableRewardThisEpoch = 0;
 
-        // just for testing thing, so that exp volume per hour is set as what we pass.
-        // else in the update function it will be resetted.
-        currentVolumPerHour = amount;
-    }
-
-    function updateForEpoch() private {
-        expectedVolumePerHour = Math.max(currentVolumPerHour, 1);
-        availableRewardThisHour = rewardPerHour;
-        currentVolumPerHour = 0;
+        // Consider the reward pending from previous epoch and
+        // rewards capacity that was increased from penalizing people (AIP9 2nd point).
+        availableRewardThisEpoch = rewardPerEpoch.add(rewardCollectedFromPenalties).add(rewardLeftFromPreviousEpoch);
+        rewardCollectedFromPenalties = 0;
 
         lastExecutedAt = block.timestamp;
+    }
+
+    function refundIncentiveToken() external onlyOwner {
+        incentiveToken.transfer(msg.sender, incentiveToken.balanceOf(address(this)));
     }
 
     /**
@@ -238,23 +248,34 @@ contract MockController is Epoch {
             // NOTE: amount has to be approved from frontend.
 
             // Burn and charge a fraction of the penalty.
-            token.burnFrom(to, amountToPenalize.mul(penaltyToBurn).div(100));
+            incentiveToken.burnFrom(to, amountToPenalize.mul(penaltyToBurn).div(100));
+
             // Keep a fraction of the penalty as funds for paying out rewards.
-            token.transferFrom(to, address(this), amountToPenalize.mul(penaltyToKeep).div(100));
+            uint256 amountToKeep = amountToPenalize.mul(penaltyToKeep).div(100);
+            // Get the amount to keep in the contract.
+            incentiveToken.transferFrom(to, address(this), amountToKeep);
+            // Increase the variable to reflect this transfer.
+            rewardCollectedFromPenalties = rewardCollectedFromPenalties.add(amountToKeep);
+
             // Send a fraction of the penalty to fund the ecosystem.
-            token.transferFrom(to, ecosystemFund, amountToPenalize.mul(penaltyToRedirect).div(100));
+            incentiveToken.transferFrom(to, ecosystemFund, amountToPenalize.mul(penaltyToRedirect).div(100));
         }
     }
 
-    function _incentiviseTrade(uint256 buyVolume, address to) private {
+    function _incentiviseTrade(
+        uint256 price,
+        uint256 buyVolume,
+        uint256 liquidity,
+        address to
+    ) private {
         // Calculate the amount as per volumne and rate.
-        uint256 amountToReward = estimateRewardToGive(buyVolume);
+        uint256 amountToReward = estimateRewardToGive(price, liquidity, buyVolume);
 
         if (amountToReward > 0) {
-            availableRewardThisHour = availableRewardThisHour.sub(amountToReward);
+            availableRewardThisEpoch = availableRewardThisEpoch.sub(amountToReward);
 
             // Send reward to the appropriate address.
-            token.transfer(to, amountToReward);
+            incentiveToken.transfer(to, amountToReward);
         }
     }
 
@@ -274,17 +295,6 @@ contract MockController is Epoch {
         _conductChecks(reserveA, price, amountOutA, amountInA, to);
     }
 
-    function _updateForEpoch() private {
-        // This way if the curr. volume is 0 and we set expVolumePerEpoch to currentVolumePerEpoch or
-        // minVolumePerHour we expect.
-        expectedVolumePerHour = Math.max(currentVolumPerHour, minVolumePerHour);
-        availableRewardThisHour = rewardPerHour;
-        // Here we set the currentVolumePerEpoch for the new epoch to 0.
-        currentVolumPerHour = 0;
-
-        lastExecutedAt = block.timestamp;
-    }
-
     function _conductChecks(
         uint112 reserveA, // ARTH liquidity
         uint256 priceA, // ARTH price
@@ -292,7 +302,7 @@ contract MockController is Epoch {
         uint256 amountInA, // ARTH being sold
         address to
     ) private {
-        /// capture volume and snapshot it every epoch.
+        // capture volume and snapshot it every epoch.
         if (getCurrentEpoch() >= getNextEpoch()) _updateForEpoch();
 
         // Check if we are selling and if we are blow the target price?
@@ -311,14 +321,10 @@ contract MockController is Epoch {
         }
 
         // Check if we are buying and below the target price
-        if (amountOutA > 0 && priceA < getRewardIncentivePrice() && availableRewardThisHour > 0) {
-            // Volume of epoch is only considered while giving rewards, not while penalizing.
-            // We also consider only buy volume, while buying.
-            currentVolumPerHour = currentVolumPerHour.add(amountOutA);
-
+        if (amountOutA > 0 && priceA < getRewardIncentivePrice() && availableRewardThisEpoch > 0) {
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
-            _incentiviseTrade(amountOutA, to);
+            _incentiviseTrade(priceA, amountOutA, reserveA, to);
         }
     }
 }

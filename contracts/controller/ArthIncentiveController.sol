@@ -85,7 +85,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         uint256 rewardToGive = Math.min(percentOfPool, deviationFromTarget);
 
         uint256 calculatedRewards =
-            buyVolume.mul(rewardToGive).mul(arthToMahaRate).mul(rewardMultiplier).div(10000 * 100000 * 1e18);
+            rewardPerEpoch.mul(rewardToGive).mul(arthToMahaRate).mul(rewardMultiplier).div(10000 * 100000 * 1e18);
 
         return Math.min(availableRewardThisEpoch, calculatedRewards);
     }
@@ -105,7 +105,11 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
             incentiveToken.burnFrom(to, amountToPenalize.mul(penaltyToBurn).div(100));
 
             // Keep a fraction of the penalty as funds for paying out rewards.
-            // incentiveToken.transferFrom(to, address(this), amountToPenalize.mul(penaltyToKeep).div(100));
+            uint256 amountToKeep = amountToPenalize.mul(penaltyToKeep).div(100);
+            // Get the amount to keep in the contract.
+            incentiveToken.transferFrom(to, address(this), amountToKeep);
+            // Increase the variable to reflect this transfer.
+            rewardCollectedFromPenalties = rewardCollectedFromPenalties.add(amountToKeep);
 
             // Send a fraction of the penalty to fund the ecosystem.
             incentiveToken.transferFrom(to, ecosystemFund, amountToPenalize.mul(penaltyToRedirect).div(100));
@@ -196,7 +200,11 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     }
 
     function _updateForEpoch() private {
-        availableRewardThisEpoch = rewardPerEpoch;
+        // Consider the reward pending from previous epoch and
+        // rewards capacity that was increased from penalizing people (AIP9 2nd point).
+        availableRewardThisEpoch = rewardPerEpoch.add(rewardCollectedFromPenalties);
+        rewardCollectedFromPenalties = 0;
+
         lastExecutedAt = block.timestamp;
     }
 

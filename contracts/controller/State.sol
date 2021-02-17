@@ -54,7 +54,10 @@ contract State is Ownable {
     // Percentage of penalty to be redirected to diff. funds(currently ecosystem fund).
     uint256 public penaltyToRedirect = uint256(10); // In %.
 
+    // The reward which can be given out during this epoch.
     uint256 public availableRewardThisEpoch = 0;
+    // The reward which has been collected through the penalities accross all epochs.
+    uint256 public rewardCollectedFromPenalties = 0;
 
     uint256 public arthToMahaRate;
 
