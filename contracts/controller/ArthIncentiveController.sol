@@ -204,6 +204,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         // rewards capacity that was increased from penalizing people (AIP9 2nd point).
         availableRewardThisEpoch = rewardPerEpoch.add(rewardCollectedFromPenalties);
         lastExecutedAt = block.timestamp;
+        rewardCollectedFromPenalties = 0;
     }
 
     function refundIncentiveToken() external onlyOwner {
