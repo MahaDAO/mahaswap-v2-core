@@ -201,7 +201,7 @@ contract MockController is Epoch {
         rewardPrice = newRewardPrice;
     }
 
-    function setMahaPerHour(uint256 _rewardPerEpoch) public {
+    function setMahaPerEpoch(uint256 _rewardPerEpoch) public {
         rewardPerEpoch = _rewardPerEpoch;
     }
 
