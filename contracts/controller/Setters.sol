@@ -18,28 +18,21 @@ contract Setters is Getters {
 
     function setPenaltyToBurn(uint256 percent) public onlyOwner {
         require(percent > 0 && percent < 100, 'Controller: invalid %');
-
         penaltyToBurn = percent;
     }
 
     function setPenaltyToRedirect(uint256 percent) public onlyOwner {
         require(percent > 0 && percent < 100, 'Controller: invalid %');
-
         penaltyToRedirect = percent;
     }
 
     function setPenaltyToKeep(uint256 percent) public onlyOwner {
         require(percent > 0 && percent < 100, 'Controller: invalid %');
-
         penaltyToKeep = percent;
     }
 
     function setEcosystemFund(address fund) external onlyOwner {
         ecosystemFund = fund;
-    }
-
-    function setMinVolumePerEpoch(uint256 volume) public onlyOwner {
-        minVolumePerEpoch = volume;
     }
 
     function setRewardMultiplier(uint256 multiplier) public onlyOwner {
@@ -65,10 +58,6 @@ contract Setters is Getters {
 
     function setTokenAProtocolToken(bool val) public onlyOwner {
         isTokenAProtocolToken = val;
-    }
-
-    function setExpectedVolumePerEpoch(uint256 val) public onlyOwner {
-        expectedVolumePerEpoch = val;
     }
 
     function setAvailableRewardThisEpoch(uint256 val) public onlyOwner {
