@@ -3,8 +3,9 @@ module.exports = [
   '0x5ac2a32bfa475765558cea2a0fe0bf0207d58ca4', // target token (ARTH)
   '0x5ac2a32bfa475765558cea2a0fe0bf0207d58ca4', // ecosystem fund
   '0xcd24efb0f7285cb923cab11a85fbdb1523f10011', // incentive token (NAHA)
-  "250000000000000000000", // rewardPerHour
-  "1000000000000000000" // ARTH to MAHA price
+  "500000000000000000000", // rewardPerEpoch
+  "1000000000000000000", // ARTH to MAHA price
+  5 * 60 // period
 ]
-// npx hardhat verify --constructor-args scripts/verify-incentivecontroller.js 0x9EF76456ba9abb6665Fb97d37252451E209bFcdD --network ropsten
+// npx hardhat verify --constructor-args scripts/verify-incentivecontroller.js 0xB47C55930D705f28eBF98A6d637eddA1aB98924D --network ropsten
 // 10000003099989911203319/10000008908138970689300

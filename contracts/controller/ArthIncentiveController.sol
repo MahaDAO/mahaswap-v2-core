@@ -86,8 +86,10 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         // A number from 0-100%.
         uint256 rewardToGive = Math.min(percentOfPool, deviationFromTarget);
 
+        uint256 _rewardsThisEpoch = _getUpdatedRewardsPerEpoch();
+
         uint256 calculatedRewards =
-            rewardsThisEpoch.mul(rewardToGive).mul(arthToMahaRate).mul(rewardMultiplier).div(10000 * 100000 * 1e18);
+            _rewardsThisEpoch.mul(rewardToGive).mul(arthToMahaRate).mul(rewardMultiplier).div(10000 * 100000 * 1e18);
 
         return Math.min(availableRewardThisEpoch, calculatedRewards);
     }
@@ -210,6 +212,14 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         rewardCollectedFromPenalties = 0;
 
         lastExecutedAt = block.timestamp;
+    }
+
+    function _getUpdatedRewardsPerEpoch() private view returns (uint256) {
+        if (getCurrentEpoch() >= getNextEpoch()) {
+            return Math.max(rewardsThisEpoch, rewardPerEpoch.add(rewardCollectedFromPenalties));
+        }
+
+        return rewardsThisEpoch;
     }
 
     function refundIncentiveToken() external onlyOwner {
