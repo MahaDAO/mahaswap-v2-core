@@ -223,18 +223,6 @@ describe.only('OnlyIncentiveController', () => {
         expect(
           reward
         ).to.eq(testCase[testCase.length - 1]);
-
-        // await controller.conductChecks(
-        //   testCase[0],
-        //   testCase[1],
-        //   testCase[2],
-        //   testCase[3],
-        //   wallet.address
-        // )
-
-        // expect(
-        //   await incentiveToken.balanceOf(wallet.address)
-        // ).to.gt(balanceAfter1Claim);
       })
     })
   })
