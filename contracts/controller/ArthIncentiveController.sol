@@ -200,8 +200,6 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     }
 
     function _updateForEpoch() private {
-        availableRewardThisEpoch = 0;
-
         // Consider the reward pending from previous epoch and
         // rewards capacity that was increased from penalizing people (AIP9 2nd point).
         availableRewardThisEpoch = rewardPerEpoch.add(rewardCollectedFromPenalties);
