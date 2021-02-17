@@ -56,6 +56,8 @@ contract State is Ownable {
 
     // The reward which can be given out during this epoch.
     uint256 public availableRewardThisEpoch = 0;
+    uint256 public rewardsThisEpoch = 0;
+
     // The reward which has been collected through the penalities accross all epochs.
     uint256 public rewardCollectedFromPenalties = 0;
 

@@ -124,7 +124,7 @@ const buyCases: any[][] = [
 
 
 
-describe.only('OnlyIncentiveController', () => {
+describe('OnlyIncentiveController', () => {
   const provider = new MockProvider({
     hardfork: 'istanbul',
     mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
