@@ -85,7 +85,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         uint256 rewardToGive = Math.min(percentOfPool, deviationFromTarget);
 
         uint256 calculatedRewards =
-            buyVolume.mul(rewardToGive).mul(arthToMahaRate).mul(rewardMultiplier).div(10000 * 100000 * 1e18);
+            rewardPerEpoch.mul(rewardToGive).mul(arthToMahaRate).mul(rewardMultiplier).div(10000 * 100000 * 1e18);
 
         return Math.min(availableRewardThisEpoch, calculatedRewards);
     }
