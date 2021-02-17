@@ -134,7 +134,7 @@ describe.only('OnlyIncentiveController', () => {
     incentiveToken = await deployContract(wallet, MockBurnableERC20, [expandTo18Decimals(1000000000)], overrides)
 
     await controller.connect(wallet).setEcosystemFund(other.address)
-    await controller.connect(wallet).setMahaPerEpoch(500)
+    await controller.connect(wallet).setMahaPerEpoch(expandTo18Decimals(500))
 
     await controller.setRewardPrice(expandTo18Decimals(1));
     await controller.setPenaltyPrice(expandTo18Decimals(1));
@@ -222,7 +222,7 @@ describe.only('OnlyIncentiveController', () => {
         // We use <= since, there can be precision issues in the excel file.
         expect(
           balanceAfter1Claim.sub(oldBalance)
-        ).to.lte(testCase[testCase.length - 1]);
+        ).to.eq(testCase[testCase.length - 1]);
 
         // console.log(
         //   `Buy:case:${i}`, (await incentiveToken.balanceOf(wallet.address)).sub(oldBalance).toString()
