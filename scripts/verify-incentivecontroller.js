@@ -7,5 +7,5 @@ module.exports = [
   "1000000000000000000", // ARTH to MAHA price
   5 * 60 // period
 ]
-// npx hardhat verify --constructor-args scripts/verify-incentivecontroller.js 0xB47C55930D705f28eBF98A6d637eddA1aB98924D --network ropsten
+// npx hardhat verify --constructor-args scripts/verify-incentivecontroller.js 0x9A0b30b37E35b3aD02f63E62F38E755dacE276Dc --network ropsten
 // 10000003099989911203319/10000008908138970689300

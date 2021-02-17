@@ -44,8 +44,8 @@ contract State is Ownable {
     uint256 public rewardPerEpoch = 0;
 
     // Multipiler for rewards and penalty.
-    uint256 public rewardMultiplier = 100000;
-    uint256 public penaltyMultiplier = 100000;
+    uint256 public rewardMultiplier = 50000; // 0.5x
+    uint256 public penaltyMultiplier = 10 * 100000; // 10x
 
     // Percentage of penalty to be burnt from the token's supply.
     uint256 public penaltyToBurn = uint256(45); // In %.

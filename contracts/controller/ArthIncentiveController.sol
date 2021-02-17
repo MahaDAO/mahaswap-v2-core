@@ -45,7 +45,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     }
 
     function estimatePenaltyToCharge(
-        uint256 price,
+        uint256 endingPrice,
         uint256 liquidity,
         uint256 sellVolume
     ) public view returns (uint256) {
@@ -54,10 +54,10 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         // % of pool = sellVolume / liquidity
         // % of deviation from target price = (tgt_price - price) / price
         // amountToburn = sellVolume * % of deviation from target price * % of pool * 100
-        if (price >= targetPrice) return 0;
+        if (endingPrice >= targetPrice) return 0;
 
         uint256 percentOfPool = sellVolume.mul(10000).div(liquidity);
-        uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
+        uint256 deviationFromTarget = targetPrice.sub(endingPrice).mul(10000).div(targetPrice);
 
         // A number from 0-100%.
         uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget);
@@ -69,7 +69,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     }
 
     function estimateRewardToGive(
-        uint256 price,
+        uint256 startingPrice,
         uint256 liquidity,
         uint256 buyVolume
     ) public view returns (uint256) {
@@ -78,10 +78,10 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         // % of pool = buyVolume / liquidity
         // % of deviation from target price = (tgt_price - price) / price
         // rewardToGive = buyVolume * % of deviation from target price * % of pool * 100
-        if (price >= targetPrice) return 0;
+        if (startingPrice >= targetPrice) return 0;
 
         uint256 percentOfPool = buyVolume.mul(10000).div(liquidity);
-        uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
+        uint256 deviationFromTarget = targetPrice.sub(startingPrice).mul(10000).div(targetPrice);
 
         // A number from 0-100%.
         uint256 rewardToGive = Math.min(percentOfPool, deviationFromTarget);
@@ -91,16 +91,18 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         uint256 calculatedRewards =
             _rewardsThisEpoch.mul(rewardToGive).mul(arthToMahaRate).mul(rewardMultiplier).div(10000 * 100000 * 1e18);
 
-        return Math.min(availableRewardThisEpoch, calculatedRewards);
+        uint256 availableRewards = Math.min(incentiveToken.balanceOf(address(this)), availableRewardThisEpoch);
+
+        return Math.min(availableRewards, calculatedRewards);
     }
 
     function _penalizeTrade(
-        uint256 price,
+        uint256 endingPrice,
         uint256 sellVolume,
         uint256 liquidity,
         address to
     ) private {
-        uint256 amountToPenalize = estimatePenaltyToCharge(price, liquidity, sellVolume);
+        uint256 amountToPenalize = estimatePenaltyToCharge(endingPrice, liquidity, sellVolume);
 
         if (amountToPenalize > 0) {
             // NOTE: amount has to be approved from frontend.
@@ -122,13 +124,13 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
     }
 
     function _incentiviseTrade(
-        uint256 price,
+        uint256 startingPrice,
         uint256 buyVolume,
         uint256 liquidity,
         address to
     ) private {
         // Calculate the amount as per volumne and rate.
-        uint256 amountToReward = estimateRewardToGive(price, liquidity, buyVolume);
+        uint256 amountToReward = estimateRewardToGive(startingPrice, liquidity, buyVolume);
 
         if (amountToReward > 0) {
             availableRewardThisEpoch = availableRewardThisEpoch.sub(amountToReward);
@@ -157,23 +159,29 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         address to
     ) external onlyPair {
         // calculate price after the trade has been made
-        uint256 reserveAFinal = reserveA + amountInA - amountOutA;
-        uint256 reserveBFinal = reserveB + amountInB - amountOutB;
+        uint256 reserveAFinal = uint256(reserveA) + amountInA - amountOutA;
+        uint256 reserveBFinal = uint256(reserveB) + amountInB - amountOutB;
+
+        uint256 startingPriceA = uint256(reserveB).mul(1e18).div(uint256(reserveA));
+        uint256 endingPriceA = uint256(reserveBFinal).mul(1e18).div(uint256(reserveAFinal));
 
         if (isTokenAProtocolToken) {
             // then A is ARTH
-            uint256 price = uint256(reserveBFinal).mul(1e18).div(uint256(reserveAFinal));
-            _conductChecks(reserveA, price, amountOutA, amountInA, to);
+            _conductChecks(reserveA, startingPriceA, endingPriceA, amountOutA, amountInA, to);
+            return;
         } else {
             // then B is ARTH
-            uint256 price = uint256(reserveAFinal).mul(1e18).div(uint256(reserveBFinal));
-            _conductChecks(reserveB, price, amountOutB, amountInB, to);
+            uint256 startingPriceB = uint256(1e18).div(startingPriceA);
+            uint256 endingPriceB = uint256(1e18).div(endingPriceA);
+            _conductChecks(reserveB, startingPriceB, endingPriceB, amountOutB, amountInB, to);
+            return;
         }
     }
 
     function _conductChecks(
         uint112 reserveA, // ARTH liquidity
-        uint256 priceA, // ARTH price
+        uint256 startingPriceA, // ARTH price
+        uint256 endingPriceA, // ARTH price
         uint256 amountOutA, // ARTH being bought
         uint256 amountInA, // ARTH being sold
         address to
@@ -186,10 +194,10 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
             // Check if we are below the targetPrice.
             uint256 penaltyTargetPrice = getPenaltyPrice();
 
-            if (priceA < penaltyTargetPrice) {
+            if (endingPriceA < penaltyTargetPrice) {
                 // is the user expecting some DAI? if so then this is a sell order
                 // Calculate the amount of tokens sent.
-                _penalizeTrade(priceA, amountInA, reserveA, to);
+                _penalizeTrade(endingPriceA, amountInA, reserveA, to);
 
                 // stop here to save gas
                 return;
@@ -197,10 +205,10 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         }
 
         // Check if we are buying and below the target price
-        if (amountOutA > 0 && priceA < getRewardIncentivePrice() && availableRewardThisEpoch > 0) {
+        if (amountOutA > 0 && startingPriceA < getRewardIncentivePrice() && availableRewardThisEpoch > 0) {
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
-            _incentiviseTrade(priceA, amountOutA, reserveA, to);
+            _incentiviseTrade(startingPriceA, amountOutA, reserveA, to);
         }
     }
 
