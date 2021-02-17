@@ -8,17 +8,6 @@ import {State} from './State.sol';
  * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
  */
 contract Getters is State {
-    /**
-     * Getters.
-     */
-    function _getOraclePrice() private view returns (uint256) {
-        // try {
-        //     return uniswapOracle.consult(protocolTokenAddress, 1e18);
-        // } catch {
-        //     revert('Controller: failed to consult cash price from the oracle');
-        // }
-    }
-
     // Given an output amount of an asset and pair reserves,
     // Returns a required input amount of the other asset.
     function _getAmountIn(
@@ -39,15 +28,13 @@ contract Getters is State {
         // If (useOracle) then get penalty price from an oracle
         // else get from a variable.
         // This variable is settable from the factory.
-        if (!useOracle) return penaltyPrice;
-        return _getOraclePrice();
+        return penaltyPrice;
     }
 
     function getRewardIncentivePrice() public view returns (uint256) {
         // If (useOracle) then get reward price from an oracle
         // else get from a variable.
         // This variable is settable from the factory.
-        if (!useOracle) return rewardPrice;
-        return _getOraclePrice();
+        return rewardPrice;
     }
 }

@@ -265,9 +265,10 @@ contract MahaswapV1Pair is IMahaswapV1Pair, MahaswapV1ERC20, Ownable {
             );
         }
 
-        // Get reserves after the trade was made.
-        _reward(amount0Out, amount1Out, amount0In, amount1In, to);
         _update(balance0, balance1, _reserve0, _reserve1);
+
+        // Incentivize or penalize after effects of swap were applied on state variables.
+        _reward(amount0Out, amount1Out, amount0In, amount1In, to);
 
         emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
     }

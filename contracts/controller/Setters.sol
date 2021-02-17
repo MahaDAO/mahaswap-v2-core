@@ -16,6 +16,33 @@ contract Setters is Getters {
         arthToMahaRate = val;
     }
 
+    function setPenaltyToBurn(uint256 percent) public onlyOwner {
+        require(percent > 0 && percent < 100, 'Controller: invalid %');
+        penaltyToBurn = percent;
+    }
+
+    function setPenaltyToRedirect(uint256 percent) public onlyOwner {
+        require(percent > 0 && percent < 100, 'Controller: invalid %');
+        penaltyToRedirect = percent;
+    }
+
+    function setPenaltyToKeep(uint256 percent) public onlyOwner {
+        require(percent > 0 && percent < 100, 'Controller: invalid %');
+        penaltyToKeep = percent;
+    }
+
+    function setEcosystemFund(address fund) external onlyOwner {
+        ecosystemFund = fund;
+    }
+
+    function setRewardMultiplier(uint256 multiplier) public onlyOwner {
+        rewardMultiplier = multiplier;
+    }
+
+    function setPenaltyMultiplier(uint256 multiplier) public onlyOwner {
+        penaltyMultiplier = multiplier;
+    }
+
     function setIncentiveToken(address newToken) public onlyOwner {
         require(newToken != address(0), 'Pair: invalid token');
         incentiveToken = IBurnableERC20(newToken);
@@ -31,10 +58,6 @@ contract Setters is Getters {
 
     function setTokenAProtocolToken(bool val) public onlyOwner {
         isTokenAProtocolToken = val;
-    }
-
-    function setExpectedVolumePerEpoch(uint256 val) public onlyOwner {
-        expectedVolumePerEpoch = val;
     }
 
     function setAvailableRewardThisEpoch(uint256 val) public onlyOwner {
