@@ -39,9 +39,6 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         rewardPerEpoch = _rewardPerEpoch;
         arthToMahaRate = _arthToMahaRate;
 
-        // start expecting $1mn in volume
-        expectedVolumePerEpoch = 1000000 * 1e18;
-        currentVolumPerEpoch = expectedVolumePerEpoch;
         availableRewardThisEpoch = rewardPerEpoch;
     }
 
@@ -66,16 +63,31 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
         // NOTE: multiplication by 100, is removed in the mock controller
         // Can 2x, 3x, ... the penalty.
-        return sellVolume.mul(feeToCharge).div(10000).mul(arthToMahaRate).div(1e18).mul(penaltyMultiplier);
+        return sellVolume.mul(feeToCharge).mul(arthToMahaRate).mul(penaltyMultiplier).div(10000 * 100000 * 1e18);
     }
 
-    function estimateRewardToGive(uint256 buyVolume) public view returns (uint256) {
-        return
-            Math.min(
-                // Can 2x, 3x, ... the rewards.
-                buyVolume.mul(rewardPerEpoch).div(expectedVolumePerEpoch).mul(rewardMultiplier),
-                Math.min(availableRewardThisEpoch, incentiveToken.balanceOf(address(this)))
-            );
+    function estimateRewardToGive(
+        uint256 price,
+        uint256 liquidity,
+        uint256 buyVolume
+    ) public view returns (uint256) {
+        uint256 targetPrice = getRewardIncentivePrice();
+
+        // % of pool = buyVolume / liquidity
+        // % of deviation from target price = (tgt_price - price) / price
+        // rewardToGive = buyVolume * % of deviation from target price * % of pool * 100
+        if (price >= targetPrice) return 0;
+
+        uint256 percentOfPool = buyVolume.mul(10000).div(liquidity);
+        uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
+
+        // A number from 0-100%.
+        uint256 rewardToGive = Math.min(percentOfPool, deviationFromTarget);
+
+        uint256 calculatedRewards =
+            buyVolume.mul(rewardToGive).mul(arthToMahaRate).mul(rewardMultiplier).div(10000 * 100000 * 1e18);
+
+        return Math.min(availableRewardThisEpoch, calculatedRewards);
     }
 
     function _penalizeTrade(
@@ -91,16 +103,23 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
 
             // Burn and charge a fraction of the penalty.
             incentiveToken.burnFrom(to, amountToPenalize.mul(penaltyToBurn).div(100));
+
             // Keep a fraction of the penalty as funds for paying out rewards.
-            incentiveToken.transferFrom(to, address(this), amountToPenalize.mul(penaltyToKeep).div(100));
+            // incentiveToken.transferFrom(to, address(this), amountToPenalize.mul(penaltyToKeep).div(100));
+
             // Send a fraction of the penalty to fund the ecosystem.
             incentiveToken.transferFrom(to, ecosystemFund, amountToPenalize.mul(penaltyToRedirect).div(100));
         }
     }
 
-    function _incentiviseTrade(uint256 buyVolume, address to) private {
+    function _incentiviseTrade(
+        uint256 price,
+        uint256 buyVolume,
+        uint256 liquidity,
+        address to
+    ) private {
         // Calculate the amount as per volumne and rate.
-        uint256 amountToReward = estimateRewardToGive(buyVolume);
+        uint256 amountToReward = estimateRewardToGive(price, liquidity, buyVolume);
 
         if (amountToReward > 0) {
             availableRewardThisEpoch = availableRewardThisEpoch.sub(amountToReward);
@@ -128,13 +147,17 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         address from,
         address to
     ) external onlyPair {
+        // calculate price after the trade has been made
+        uint256 reserveAFinal = reserveA + amountInA - amountOutA;
+        uint256 reserveBFinal = reserveB + amountInB - amountOutB;
+
         if (isTokenAProtocolToken) {
             // then A is ARTH
-            uint256 price = uint256(reserveB).mul(1e18).div(uint256(reserveA));
+            uint256 price = uint256(reserveBFinal).mul(1e18).div(uint256(reserveAFinal));
             _conductChecks(reserveA, price, amountOutA, amountInA, to);
         } else {
             // then B is ARTH
-            uint256 price = uint256(reserveA).mul(1e18).div(uint256(reserveB));
+            uint256 price = uint256(reserveAFinal).mul(1e18).div(uint256(reserveBFinal));
             _conductChecks(reserveB, price, amountOutB, amountInB, to);
         }
     }
@@ -166,24 +189,14 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
 
         // Check if we are buying and below the target price
         if (amountOutA > 0 && priceA < getRewardIncentivePrice() && availableRewardThisEpoch > 0) {
-            // Volume of epoch is only considered while giving rewards, not while penalizing.
-            // We also consider only buy volume, while buying.
-            currentVolumPerEpoch = currentVolumPerEpoch.add(amountOutA);
-
             // is the user expecting some ARTH? if so then this is a sell order
             // If we are buying the main protocol token, then we incentivize the tx sender.
-            _incentiviseTrade(amountOutA, to);
+            _incentiviseTrade(priceA, amountOutA, reserveA, to);
         }
     }
 
     function _updateForEpoch() private {
-        // This way if the curr. volume is 0 and we set expVolumePerEpoch to currentVolumePerEpoch or
-        // minVolumePerEpoch we expect.
-        expectedVolumePerEpoch = Math.max(currentVolumPerEpoch, minVolumePerEpoch);
         availableRewardThisEpoch = rewardPerEpoch;
-        // Here we set the currentVolumePerEpoch for the new epoch to 0.
-        currentVolumPerEpoch = 0;
-
         lastExecutedAt = block.timestamp;
     }
 
