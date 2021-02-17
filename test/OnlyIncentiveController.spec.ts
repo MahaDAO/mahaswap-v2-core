@@ -213,38 +213,28 @@ describe.only('OnlyIncentiveController', () => {
           wallet.address
         )
 
-        const balanceAfter1Claim = await incentiveToken.balanceOf(wallet.address)
+        const reward = (await incentiveToken.balanceOf(wallet.address)).sub(oldBalance)
 
         expect(
-          balanceAfter1Claim
+          (await incentiveToken.balanceOf(wallet.address))
         ).to.gt(oldBalance);
 
         // We use <= since, there can be precision issues in the excel file.
         expect(
-          balanceAfter1Claim.sub(oldBalance)
+          reward
         ).to.eq(testCase[testCase.length - 1]);
 
-        // console.log(
-        //   `Buy:case:${i}`, (await incentiveToken.balanceOf(wallet.address)).sub(oldBalance).toString()
-        // );
-
-        console.log(balanceAfter1Claim.sub(oldBalance).toString());
-
-        await controller.conductChecks(
-          testCase[0],
-          testCase[1],
-          testCase[2],
-          testCase[3],
-          wallet.address
-        )
+        // await controller.conductChecks(
+        //   testCase[0],
+        //   testCase[1],
+        //   testCase[2],
+        //   testCase[3],
+        //   wallet.address
+        // )
 
         // expect(
         //   await incentiveToken.balanceOf(wallet.address)
         // ).to.gt(balanceAfter1Claim);
-
-        rewardWith1x.push(
-          [balanceAfter1Claim.sub(oldBalance), (await incentiveToken.balanceOf(wallet.address)).sub(balanceAfter1Claim)]
-        )
       })
     })
   })
