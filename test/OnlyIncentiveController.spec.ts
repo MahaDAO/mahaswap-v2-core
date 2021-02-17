@@ -289,7 +289,7 @@ describe.only('OnlyIncentiveController', () => {
 
     buyCases.forEach((testCase, i) => {
       it(`conductChecks:reward:${i}`, async () => {
-        await controller.setExpVolumePerHour(testCase[testCase.length - 2]);
+        // await controller.setExpVolumePerHour(testCase[testCase.length - 2]);
 
         await controller.setPenaltyPrice(expandTo18Decimals(1));
         await controller.setIncentiveToken(incentiveToken.address);
