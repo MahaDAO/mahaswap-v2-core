@@ -18,50 +18,43 @@ const sellCases: any[][] = [
     parseEther('0.60'), // Represents priceA.
     parseEther('0'), // Represents amountOutA.
     parseEther('10000'), // Represents amountInA.
-    parseEther('40') // Represents expected penalty as pre excel sheet.
+    parseEther('2.08') // Represents expected penalty as pre excel sheet.
   ],
   [
     parseEther('1000000'),
     parseEther('0.20'),
     parseEther('0'),
     parseEther('10000'),
-    parseEther('80')
-  ],
-  [
-    parseEther('1000000'),
-    parseEther('0.10'),
-    parseEther('0'),
-    parseEther('10000'),
-    parseEther('90')
+    parseEther('4.17')
   ],
   [
     parseEther('1000000'),
     parseEther('0.90'),
     parseEther('0'),
     parseEther('10000'),
-    parseEther('10')
+    parseEther('0.52')
   ],
   [
     parseEther('10000000'),
     parseEther('0.90'),
     parseEther('0'),
-    parseEther('100000'),
-    parseEther('1')
+    parseEther('10000'),
+    parseEther('0.05')
   ],
   [
     parseEther('100000000'),
     parseEther('0.90'),
     parseEther('0'),
     parseEther('10000'),
-    parseEther('0.10')
+    parseEther('0.01')
   ],
   [
     parseEther('100000'),
     parseEther('0.60'),
     parseEther('0'),
     parseEther('10000'),
-    parseEther('400')
-  ],
+    parseEther('0.10')
+  ]
 ]
 
 const buyCases: any[][] = [

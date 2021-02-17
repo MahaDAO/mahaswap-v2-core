@@ -240,7 +240,7 @@ contract MockController is Epoch {
             incentiveToken.burnFrom(to, amountToPenalize.mul(penaltyToBurn).div(100));
 
             // Keep a fraction of the penalty as funds for paying out rewards.
-            // incentiveToken.transferFrom(to, address(this), amountToPenalize.mul(penaltyToKeep).div(100));
+            incentiveToken.transferFrom(to, address(this), amountToPenalize.mul(penaltyToKeep).div(100));
 
             // Send a fraction of the penalty to fund the ecosystem.
             incentiveToken.transferFrom(to, ecosystemFund, amountToPenalize.mul(penaltyToRedirect).div(100));
