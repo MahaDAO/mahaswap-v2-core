@@ -214,6 +214,8 @@ contract MockController is Epoch {
     }
 
     function _updateForEpoch() private {
+        // Consider the reward pending from previous epoch and
+        // rewards capacity that was increased from penalizing people (AIP9 2nd point).
         availableRewardThisEpoch = rewardPerEpoch.add(incentiveToken.balanceOf(address(this)));
         lastExecutedAt = block.timestamp;
     }
