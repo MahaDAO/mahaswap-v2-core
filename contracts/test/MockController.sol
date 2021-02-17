@@ -214,7 +214,7 @@ contract MockController is Epoch {
     }
 
     function _updateForEpoch() private {
-        availableRewardThisEpoch = rewardPerEpoch;
+        availableRewardThisEpoch = rewardPerEpoch.add(incentiveToken.balanceOf(address(this)));
         lastExecutedAt = block.timestamp;
     }
 
