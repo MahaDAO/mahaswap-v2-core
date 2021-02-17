@@ -59,7 +59,7 @@ const sellCases: any[][] = [
     parseEther('0'),
     parseEther('10000'),
     100000,
-    parseEther('340')
+    parseEther('320')
   ]
 ]
 
