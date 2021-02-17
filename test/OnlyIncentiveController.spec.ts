@@ -220,7 +220,7 @@ describe.only('OnlyIncentiveController', () => {
   describe('Sell, penalty 2x', () => {
     sellCases.forEach((testCase, i) => {
       beforeEach(async () => {
-        await controller.connect(wallet).setPenaltyMultiplier(2);
+        await controller.connect(wallet).setPenaltyMultiplier(2 * 100000);
       })
 
       it(`conductChecks:penalty:${i}`, async () => {
@@ -277,7 +277,7 @@ describe.only('OnlyIncentiveController', () => {
 
   describe('Buy reward 2x', () => {
     beforeEach(async () => {
-      await controller.connect(wallet).setRewardMultiplier(2);
+      await controller.connect(wallet).setRewardMultiplier(2 * 100000);
     })
 
     buyCases.forEach((testCase, i) => {
