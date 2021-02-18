@@ -56,8 +56,8 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         // amountToburn = sellVolume * % of deviation from target price * % of pool * 100
         if (endingPrice >= targetPrice) return 0;
 
-        uint256 percentOfPool = sellVolume.mul(10000).div(liquidity);
-        uint256 deviationFromTarget = targetPrice.sub(endingPrice).mul(10000).div(targetPrice);
+        uint256 percentOfPool = sellVolume.mul(100000000).div(liquidity);
+        uint256 deviationFromTarget = targetPrice.sub(endingPrice).mul(100000000).div(targetPrice);
 
         // A number from 0-100%.
         uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget);
@@ -65,7 +65,7 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
         // NOTE: multiplication by 100, is removed in the mock controller
         // Can 2x, 3x, ... the penalty.
-        return sellVolume.mul(feeToCharge).mul(arthToMahaRate).mul(penaltyMultiplier).div(10000 * 100000 * 1e18);
+        return sellVolume.mul(feeToCharge).mul(arthToMahaRate).mul(penaltyMultiplier).div(100000000 * 100000 * 1e18);
     }
 
     function estimateRewardToGive(
@@ -80,16 +80,18 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         // rewardToGive = buyVolume * % of deviation from target price * % of pool * 100
         if (startingPrice >= targetPrice) return 0;
 
-        uint256 percentOfPool = buyVolume.mul(10000).div(liquidity);
-        uint256 deviationFromTarget = targetPrice.sub(startingPrice).mul(10000).div(targetPrice);
+        uint256 percentOfPool = buyVolume.mul(100000000).div(liquidity);
+        uint256 deviationFromTarget = targetPrice.sub(startingPrice).mul(100000000).div(targetPrice);
 
         // A number from 0-100%.
-        uint256 rewardToGive = Math.min(percentOfPool, deviationFromTarget);
+        uint256 rewardToGive = percentOfPool.mul(deviationFromTarget).div(100000000);
 
         uint256 _rewardsThisEpoch = _getUpdatedRewardsPerEpoch();
 
         uint256 calculatedRewards =
-            _rewardsThisEpoch.mul(rewardToGive).mul(arthToMahaRate).mul(rewardMultiplier).div(10000 * 100000 * 1e18);
+            _rewardsThisEpoch.mul(rewardToGive).mul(rewardMultiplier).mul(arthToMahaRate).div(
+                100000000 * 100000 * 1e18
+            );
 
         uint256 availableRewards = Math.min(incentiveToken.balanceOf(address(this)), availableRewardThisEpoch);
 
