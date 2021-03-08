@@ -2,11 +2,12 @@
 
 pragma solidity =0.5.16;
 
+import {Ownable} from '../libraries/Ownable.sol';
 import {SafeMath} from '../libraries/SafeMath.sol';
 import {UQ112x112} from '../libraries/UQ112x112.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 import {IUniswapOracle} from '../interfaces/IUniswapOracle.sol';
-import {Ownable} from '../libraries/Ownable.sol';
+import {IChainlinkAggregatorV3} from '../interfaces/IChainlinkAggregatorV3.sol';
 
 /**
  * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
@@ -29,6 +30,9 @@ contract State is Ownable {
 
     // Used to track the latest twap price.
     IUniswapOracle public uniswapOracle;
+
+    // Chainlink price feed for non-protocol token to get price in USD terms.
+    IChainlinkAggregatorV3 public priceFeed;
 
     // Default price of when reward is to be given.
     uint256 public rewardPrice = uint256(110).mul(1e16); // ~1.2$
