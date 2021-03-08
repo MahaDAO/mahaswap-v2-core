@@ -4,6 +4,7 @@ pragma solidity =0.5.16;
 
 import {Getters} from './Getters.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
+import {IChainlinkAggregatorV3} from '../interfaces/IChainlinkAggregatorV3.sol';
 
 /**
  * NOTE: Contract MahaswapV1Pair should be the owner of this controller.

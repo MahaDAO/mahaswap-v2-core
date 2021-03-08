@@ -25,7 +25,7 @@ contract Getters is State {
     }
 
     function getLatestQuoteInUSD() public view returns (uint256) {
-        if (quotePriceFeed == address(0)) return 1e18;
+        if (address(quotePriceFeed) == address(0)) return 1e18;
 
         uint256 decimalUsed = quotePriceFeed.decimals();
         uint256 decimalDiff = uint256(18).sub(decimalUsed);

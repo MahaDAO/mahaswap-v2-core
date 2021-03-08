@@ -8,6 +8,7 @@ import {Math} from '../libraries/Math.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 import {IMahaswapV1Pair} from '../interfaces/IMahaswapV1Pair.sol';
 import {IIncentiveController} from '../interfaces/IIncentiveController.sol';
+import {IChainlinkAggregatorV3} from '../interfaces/IChainlinkAggregatorV3.sol';
 
 /**
  * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
