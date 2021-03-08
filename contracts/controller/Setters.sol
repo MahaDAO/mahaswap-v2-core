@@ -60,6 +60,10 @@ contract Setters is Getters {
         isTokenAProtocolToken = val;
     }
 
+    function setChainlinkPriceFeed(IChainlinkAggregatorV3 feed) public onlyOwner {
+        quotePriceFeed = feed;
+    }
+
     function setAvailableRewardThisEpoch(uint256 val) public onlyOwner {
         availableRewardThisEpoch = val;
     }

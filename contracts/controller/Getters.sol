@@ -25,11 +25,13 @@ contract Getters is State {
     }
 
     function getLatestQuoteInUSD() public view returns (uint256) {
-        uint256 decimalUsed = priceFeed.decimals();
+        if (quotePriceFeed == address(0)) return 1e18;
+
+        uint256 decimalUsed = quotePriceFeed.decimals();
         uint256 decimalDiff = uint256(18).sub(decimalUsed);
 
         (uint80 roundID, int256 price, uint256 startedAt, uint256 timeStamp, uint80 answeredInRound) =
-            priceFeed.latestRoundData();
+            quotePriceFeed.latestRoundData();
 
         if (decimalDiff > 0) return uint256(price).mul(uint256(10**decimalDiff));
         return uint256(price);

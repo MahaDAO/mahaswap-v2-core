@@ -32,7 +32,8 @@ contract State is Ownable {
     IUniswapOracle public uniswapOracle;
 
     // Chainlink price feed for non-protocol token to get price in USD terms.
-    IChainlinkAggregatorV3 public priceFeed;
+    // Quote is non-protocol token. (Dai in case of ARTH-DAI pair)
+    IChainlinkAggregatorV3 public quotePriceFeed;
 
     // Default price of when reward is to be given.
     uint256 public rewardPrice = uint256(110).mul(1e16); // ~1.2$

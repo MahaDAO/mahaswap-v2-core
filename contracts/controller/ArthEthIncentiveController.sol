@@ -22,7 +22,8 @@ contract ArthEthIncentiveController is IIncentiveController, Setters, Epoch {
         address _ecosystemFund,
         address _incentiveToken,
         uint256 _rewardPerEpoch,
-        uint256 _arthToMahaRate
+        uint256 _arthToMahaRate,
+        IChainlinkAggregatorV3 quotePriceFeed_
     )
         public
         Epoch(
@@ -39,6 +40,7 @@ contract ArthEthIncentiveController is IIncentiveController, Setters, Epoch {
         rewardPerEpoch = _rewardPerEpoch;
         arthToMahaRate = _arthToMahaRate;
 
+        quotePriceFeed = quotePriceFeed_;
         availableRewardThisEpoch = rewardPerEpoch;
     }
 
