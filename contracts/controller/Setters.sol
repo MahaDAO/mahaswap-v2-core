@@ -3,6 +3,7 @@
 pragma solidity =0.5.16;
 
 import {Getters} from './Getters.sol';
+import {ICurve} from '../interfaces/ICurve.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 
 /**
@@ -14,6 +15,10 @@ contract Setters is Getters {
      */
     function setArthToMahaRate(uint256 val) external onlyOwner {
         arthToMahaRate = val;
+    }
+
+    function setCurve(ICurve curve_) public onlyOwner {
+        curve = curve_;
     }
 
     function setPenaltyToBurn(uint256 percent) public onlyOwner {

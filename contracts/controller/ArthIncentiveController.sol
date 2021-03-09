@@ -57,8 +57,13 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         uint256 percentOfPool = sellVolume.mul(10000).div(liquidity);
         uint256 deviationFromTarget = targetPrice.sub(price).mul(10000).div(targetPrice);
 
+        uint256 curvedDeviation = deviationFromTarget;
+        if (address(curve) != address(0)) {
+            curvedDeviation = curve.getCurvedDeviation(deviationFromTarget.div(10000)).mul(10000);
+        }
+
         // A number from 0-100%.
-        uint256 feeToCharge = Math.max(percentOfPool, deviationFromTarget);
+        uint256 feeToCharge = Math.max(percentOfPool, curvedDeviation);
 
         // NOTE: Shouldn't this be multiplied by 10000 instead of 100
         // NOTE: multiplication by 100, is removed in the mock controller
