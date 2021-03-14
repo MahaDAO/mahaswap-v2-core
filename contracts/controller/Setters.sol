@@ -4,6 +4,7 @@ pragma solidity =0.5.16;
 
 import {Getters} from './Getters.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
+import {IChainlinkAggregatorV3} from '../interfaces/IChainlinkAggregatorV3.sol';
 
 /**
  * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
@@ -58,6 +59,10 @@ contract Setters is Getters {
 
     function setTokenAProtocolToken(bool val) public onlyOwner {
         isTokenAProtocolToken = val;
+    }
+
+    function setChainlinkPriceFeed(IChainlinkAggregatorV3 feed) public onlyOwner {
+        quotePriceFeed = feed;
     }
 
     function setAvailableRewardThisEpoch(uint256 val) public onlyOwner {

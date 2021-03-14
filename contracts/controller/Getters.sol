@@ -24,6 +24,19 @@ contract Getters is State {
         amountIn = (numerator / denominator).add(1);
     }
 
+    function getLatestQuoteInUSD() public view returns (uint256) {
+        if (address(quotePriceFeed) == address(0)) return 1e18;
+
+        uint256 decimalUsed = quotePriceFeed.decimals();
+        uint256 decimalDiff = uint256(18).sub(decimalUsed);
+
+        (uint80 roundID, int256 price, uint256 startedAt, uint256 timeStamp, uint80 answeredInRound) =
+            quotePriceFeed.latestRoundData();
+
+        if (decimalDiff > 0) return uint256(price).mul(uint256(10**decimalDiff));
+        return uint256(price);
+    }
+
     function getPenaltyPrice() public view returns (uint256) {
         // If (useOracle) then get penalty price from an oracle
         // else get from a variable.
