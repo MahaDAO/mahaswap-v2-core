@@ -24,7 +24,7 @@ contract ArthEthIncentiveController is IIncentiveController, Setters, Epoch {
         address _incentiveToken,
         uint256 _rewardPerEpoch,
         uint256 _arthToMahaRate,
-        IChainlinkAggregatorV3 quotePriceFeed_
+        address _quotePriceFeed
     )
         public
         Epoch(
@@ -40,9 +40,8 @@ contract ArthEthIncentiveController is IIncentiveController, Setters, Epoch {
         isTokenAProtocolToken = IMahaswapV1Pair(_pairAddress).token0() == _protocolTokenAddress;
         rewardPerEpoch = _rewardPerEpoch;
         arthToMahaRate = _arthToMahaRate;
-
-        quotePriceFeed = quotePriceFeed_;
         availableRewardThisEpoch = rewardPerEpoch;
+        quotePriceFeed = IChainlinkAggregatorV3(_quotePriceFeed);
     }
 
     function estimatePenaltyToCharge(

@@ -5,6 +5,7 @@ pragma solidity =0.5.16;
 import {Math} from '../libraries/Math.sol';
 import {Setters} from './Setters.sol';
 import {IIncentiveController} from '../interfaces/IIncentiveController.sol';
+import {IChainlinkAggregatorV3} from '../interfaces/IChainlinkAggregatorV3.sol';
 import {IMahaswapV1Pair} from '../interfaces/IMahaswapV1Pair.sol';
 import {Epoch} from '../Epoch.sol';
 import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
@@ -12,7 +13,7 @@ import {IBurnableERC20} from '../interfaces/IBurnableERC20.sol';
 /**
  * NOTE: Contract MahaswapV1Pair should be the owner of this controller.
  */
-contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
+contract ArthDaiIncentiveController is IIncentiveController, Setters, Epoch {
     /**
      * Constructor.
      */
@@ -23,7 +24,8 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         address _incentiveToken,
         uint256 _rewardPerEpoch,
         uint256 _arthToMahaRate,
-        uint256 _period
+        uint256 _period,
+        address _quotePriceFeed
     )
         public
         Epoch(
@@ -39,9 +41,9 @@ contract ArthIncentiveController is IIncentiveController, Setters, Epoch {
         isTokenAProtocolToken = IMahaswapV1Pair(_pairAddress).token0() == _protocolTokenAddress;
         rewardPerEpoch = _rewardPerEpoch;
         arthToMahaRate = _arthToMahaRate;
-
         availableRewardThisEpoch = rewardPerEpoch;
         rewardsThisEpoch = rewardPerEpoch;
+        quotePriceFeed = IChainlinkAggregatorV3(_quotePriceFeed);
     }
 
     function estimatePenaltyToCharge(
