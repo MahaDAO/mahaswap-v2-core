@@ -36,9 +36,9 @@ contract State is Ownable {
     IChainlinkAggregatorV3 public quotePriceFeed;
 
     // Default price of when reward is to be given.
-    uint256 public rewardPrice = uint256(110).mul(1e16); // ~1.2$
+    uint256 public rewardPrice = uint256(100).mul(1e16); // ~1$
     // Default price of when penalty is to be charged.
-    uint256 public penaltyPrice = uint256(110).mul(1e16); // ~0.95$
+    uint256 public penaltyPrice = uint256(100).mul(1e16); // ~1$
 
     // Should we use oracle to get diff. price feeds or not.
     bool public useOracle = false;
@@ -50,7 +50,7 @@ contract State is Ownable {
 
     // Multipiler for rewards and penalty.
     uint256 public rewardMultiplier = 5 * 100000; // 5x
-    uint256 public penaltyMultiplier = 10 * 100000; // 10x
+    uint256 public penaltyMultiplier = 200 * 100000; // 200x
 
     // Percentage of penalty to be burnt from the token's supply.
     uint256 public penaltyToBurn = uint256(45); // In %.

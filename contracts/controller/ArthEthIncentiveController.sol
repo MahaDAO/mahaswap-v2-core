@@ -24,11 +24,12 @@ contract ArthEthIncentiveController is IIncentiveController, Setters, Epoch {
         address _incentiveToken,
         uint256 _rewardPerEpoch,
         uint256 _arthToMahaRate,
+        uint256 _period,
         address _quotePriceFeed
     )
         public
         Epoch(
-            12 * 60 * 60, /* 12 hour epochs */
+            _period, /* 12 hour epochs */
             block.timestamp,
             0
         )

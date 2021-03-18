@@ -1,18 +1,17 @@
-import '@nomiclabs/hardhat-ethers';
-import '@nomiclabs/hardhat-etherscan';
-import 'hardhat-gas-reporter';
-import 'solidity-coverage';
+import '@nomiclabs/hardhat-ethers'
+import '@nomiclabs/hardhat-etherscan'
+import 'hardhat-gas-reporter'
+import 'solidity-coverage'
 
-require('dotenv').config();
+require('dotenv').config()
 export default {
   default: 'goerli',
   networks: {
-    hardhat: {
-
-    },
+    hardhat: {},
     mainnet: {
       url: `https://mainnet.infura.io/v3/69666afe933b4175afe4999170158a5f`,
-      accounts: [`0x${process.env.METAMASK_WALLET_SECRET}`]
+      accounts: [`0x${process.env.METAMASK_WALLET_SECRET}`],
+      gasPrice: 170 * 1000000000
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/69666afe933b4175afe4999170158a5f`,
@@ -24,7 +23,7 @@ export default {
     },
 
     development: {
-      url: "http://localhost:7545",
+      url: 'http://localhost:7545',
       accounts: [process.env.METAMASK_WALLET_SECRET]
     }
   },
@@ -33,23 +32,23 @@ export default {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200,
-      },
-    },
+        runs: 200
+      }
+    }
   },
   paths: {
     sources: './contracts',
     tests: './test',
     cache: './build/cache',
-    artifacts: './build/artifacts',
+    artifacts: './build/artifacts'
   },
   gasReporter: {
     currency: 'USD',
-    enabled: true,
+    enabled: true
   },
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
     apiKey: process.env.ETHERSCAN_API_KEY
-  },
-};
+  }
+}
